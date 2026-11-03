@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;800&family=JetBrains+Mono:wght@400;500&family=Newsreader:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-paper font-sans font-normal leading-[1.5] text-ink;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-extrabold leading-[1.2] tracking-[-0.02em];
+  }
+
+  ::selection {
+    @apply bg-accent text-ink;
+  }
+}
+
+@layer components {
+  .page-container {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-12;
+  }
+
+  .field-control {
+    @apply w-full border border-ink/20 bg-paper px-4 py-3 font-sans text-base text-ink transition-colors duration-200 placeholder:text-ink/55 hover:border-ink/50 focus:border-ink focus:outline focus:outline-2 focus:outline-accent;
+  }
+
+  .field-control[aria-invalid='true'] {
+    @apply border-error;
+  }
+}
