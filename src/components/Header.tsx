@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import Button from '@/components/Button';
 import Logo from '@/components/Logo';
@@ -9,9 +9,14 @@ import { NAV_ITEMS } from '@/data/navigation';
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-ink bg-paper">
+    <header className="sticky top-0 z-50 border-b border-ink bg-paper print:hidden">
       <div className="page-container flex h-16 items-center justify-between md:h-20">
         <Logo />
 

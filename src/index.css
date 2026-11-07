@@ -38,3 +38,13 @@
     @apply border-error;
   }
 }
+
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  body {
+    background: #ffffff;
+  }
+}

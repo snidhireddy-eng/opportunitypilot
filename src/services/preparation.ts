@@ -46,9 +46,16 @@ export function validatePreparation(values: PreparationFormValues): PreparationE
   return errors;
 }
 
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function createPreparationRequest(values: PreparationFormValues): PreparationRequest {
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     submittedAt: new Date().toISOString(),
     company: values.company.trim(),
     personName: values.personName.trim(),

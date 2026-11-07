@@ -3,6 +3,7 @@ import Button from '@/components/Button';
 import Eyebrow from '@/components/Eyebrow';
 import { MEETING_TYPE_OPTIONS } from '@/data/preparation';
 import type { PreparationRequest } from '@/types/preparation';
+import { ArrowRight } from 'lucide-react';
 
 type PreparationSummaryProps = {
   request: PreparationRequest;
@@ -57,6 +58,9 @@ export default function PreparationSummary({ request, onEdit, onClear }: Prepara
       </dl>
 
       <div className="flex flex-col gap-3 sm:flex-row">
+        <Button to="/briefing" className="w-full sm:w-auto">
+          View Meeting Briefing <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Button>
         <Button variant="secondary" onClick={onEdit} className="w-full sm:w-auto">
           Edit details
         </Button>

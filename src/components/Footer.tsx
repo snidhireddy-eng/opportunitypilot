@@ -44,7 +44,7 @@ function LinkColumn({ title, links }: LinkColumnProps) {
 
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-ink">
+    <footer className="mt-auto border-t border-ink print:hidden">
       <div className="page-container py-14 md:py-20">
         <div className="grid gap-12 md:grid-cols-12 md:gap-8">
           <div className="md:col-span-6">

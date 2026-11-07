@@ -4,6 +4,7 @@ import Eyebrow from '@/components/Eyebrow';
 import PreparationSummary from '@/components/PreparationSummary';
 import SelectField from '@/components/SelectField';
 import TextField from '@/components/TextField';
+import { usePreparation } from '@/context/usePreparation';
 import { EMPTY_PREPARATION_VALUES, MEETING_TYPE_OPTIONS, PREPARATION_FIELD_LIMITS } from '@/data/preparation';
 import { createPreparationRequest, validatePreparation } from '@/services/preparation';
 import type {
@@ -29,6 +30,7 @@ export default function PreparationForm() {
   const [errors, setErrors] = useState<PreparationErrors>({});
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [submitted, setSubmitted] = useState<PreparationRequest | null>(null);
+  const { setRequest: setSharedRequest } = usePreparation();
 
   const updateField = <K extends keyof PreparationFormValues>(
     field: K,
@@ -53,7 +55,9 @@ export default function PreparationForm() {
       return;
     }
 
-    setSubmitted(createPreparationRequest(values));
+    const request = createPreparationRequest(values);
+    setSubmitted(request);
+    setSharedRequest(request);
   };
 
   const handleClear = () => {
@@ -61,6 +65,7 @@ export default function PreparationForm() {
     setErrors({});
     setHasAttemptedSubmit(false);
     setSubmitted(null);
+    setSharedRequest(null);
   };
 
   if (submitted) {
@@ -87,7 +92,7 @@ export default function PreparationForm() {
       )}
 
       <section aria-labelledby="preparation-group-meeting" className="space-y-8">
-        <header className="border-b border-ink/20 pb-4">
+        <header id="preparation-group-meeting" className="border-b border-ink/20 pb-4">
           <Eyebrow number="01">The meeting</Eyebrow>
         </header>
 
@@ -132,7 +137,7 @@ export default function PreparationForm() {
       </section>
 
       <section aria-labelledby="preparation-group-context" className="space-y-8">
-        <header className="border-b border-ink/20 pb-4">
+        <header id="preparation-group-context" className="border-b border-ink/20 pb-4">
           <Eyebrow number="02">Your context</Eyebrow>
         </header>
 
