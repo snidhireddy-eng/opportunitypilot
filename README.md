@@ -1,10 +1,10 @@
 # OpportunityPilot
 
-**A Pre-Meeting Briefing Agent and AI Agent Benchmarking Platform**
+**An Opportunity Research and AI Agent Benchmarking Platform**
 
 ## About the Project
 
-OpportunityPilot is a frontend prototype designed to help users prepare for professional meetings by organising meeting-related information and preparation details.
+OpportunityPilot is a React frontend with a small Express API. It supports meeting preparation and a live, Google Gemini-powered opportunity research and agent comparison flow.
 
 The project aims to bring meeting preparation and AI agent evaluation together in one platform.
 
@@ -24,6 +24,8 @@ The following features are implemented in the current frontend:
 - **Preparation Summary:** Displays a frontend confirmation of the submitted preparation details.
 - **Navigation:** Provides navigation between the main project pages.
 - **Responsive Layout:** Uses a responsive frontend layout.
+- **Research Agent 2:** Uses the Google Gemini JavaScript SDK with Google Search grounding through the backend.
+- **Live Benchmarking:** Compares compatible Research Agent 1 and Research Agent 2 outputs using transparent checks.
 
 ## Pages
 
@@ -32,8 +34,8 @@ The following features are implemented in the current frontend:
 | Home | Implemented |
 | Prepare | Frontend form implemented |
 | Meeting Briefing | Placeholder |
-| Agent Benchmarking | Placeholder |
-| About | Placeholder |
+| Agent Benchmarking | Live-run form and comparison; Agent 1 requires its adapter endpoint |
+| About | Project information |
 
 ## Technology Stack
 
@@ -43,6 +45,8 @@ The following features are implemented in the current frontend:
 - Tailwind CSS
 - React Router DOM
 - Lucide React
+- Node.js + Express
+- Google Gemini API (`@google/genai`)
 
 ## Project Setup
 
@@ -71,37 +75,62 @@ The following features are implemented in the current frontend:
    npm install
    ```
 
-4. Start the development server:
+4. Create `.env` from `.env.example` and set `GEMINI_API_KEY`. Keep this file private; the key is only used by the backend.
+
+5. Start the backend in one terminal:
+
+   ```bash
+   npm run server:dev
+   ```
+
+6. Start the frontend in another terminal:
 
    ```bash
    npm run dev
    ```
 
-5. Open the local URL displayed in your terminal.
+7. Open the local URL displayed in your terminal. Vite forwards `/api` requests to the backend on port 3001.
 
 ### Available Commands
 
 | Command | Purpose |
 |---|---|
 | `npm run dev` | Starts development server |
+| `npm run server:dev` | Starts the Express API with file watching |
+| `npm run server:start` | Starts the Express API |
 | `npm run build` | Builds the frontend |
 | `npm run lint` | Runs ESLint |
-| `npm run typecheck` | Checks TypeScript types |
+| `npm run typecheck` | Checks frontend and backend TypeScript types |
+| `npm test` | Runs structured-output and benchmark tests |
 | `npm run preview` | Previews production build |
+
+### API Endpoints
+
+- `GET /api/health` reports whether the backend is running and Gemini is configured.
+- `POST /api/gemini/test` makes a simple Gemini request; an optional JSON body can include a `prompt`.
+- `POST /api/research/agent2` runs Research Agent 2. Required JSON fields: `researchQuestion`, `opportunityCategory`, and `targetAudience`; `additionalRequirements` is optional.
+- `POST /api/benchmark` sends the exact same request to both agents and returns results, scores, and winners. If Agent 1 or Gemini is not configured, its status and scores are reported as unavailable rather than fabricated.
+- The Benchmark page also has a **Run Agent 2 only** action for independent Agent 2 testing.
+
+### Research Agent 1 Adapter Contract
+
+Research Agent 1 is not included in this repository. When Person 2 provides an HTTP endpoint, set `AGENT1_API_URL` (and optionally `AGENT1_API_KEY`) in `.env`. The adapter sends the same four input fields as Research Agent 2 and expects JSON with:
+
+- `title`, `executiveSummary`
+- `keyFindings`: array of `{ "title", "detail" }`
+- `eligibilityCriteria`: string array
+- `deadlines`: array of `{ "name", "date", "detail" }`
+- `uncertainInformation`: string array
+- `sources`: array of `{ "title", "url" }`
+- Optional `model` and `usage` (`promptTokens`, `responseTokens`, `totalTokens`)
+
+Execution time is measured by the adapter, not accepted from the agent. Source URLs must be HTTP(S). Coordinate this shape and the shared request fields with Person 2 before connecting their endpoint.
+
+For cost calculation, configure both `GEMINI_INPUT_USD_PER_MILLION` and `GEMINI_OUTPUT_USD_PER_MILLION`; Agent 1 has corresponding `AGENT1_...` variables. Leave prices unset to show cost as unavailable. Accuracy is also unavailable until independent reference evidence is supplied. The live completeness, relevance, and source-quality scores are explicitly limited to structural/query-term/metadata checks and are not fact-checks.
 
 ## Current Development Status
 
-This repository contains the initial frontend implementation.
-
-The following integrations and functionalities are not yet implemented:
-
-- Live web research using Tavily.
-- AI agent integration using Bifrost.
-- Automated meeting briefing generation.
-- Agent benchmarking and scoring.
-- Backend services and database integration.
-
-These are planned development areas, not currently working features.
+The meeting-preparation flow remains a frontend prototype and does not generate a live meeting briefing. Research Agent 2 and live benchmarking are implemented, but require a configured Gemini API key. Real two-agent benchmarking additionally requires Person 2's Agent 1 endpoint. The benchmark page keeps its fictional sample data separate from live results.
 
 ## Project Goal
 
@@ -110,5 +139,5 @@ The goal is to develop OpportunityPilot into a platform that can generate resear
 ---
 
 **Project:** OpportunityPilot  
-**Status:** Frontend prototype  
+**Status:** Frontend prototype with Gemini research backend
 **Hackathon:** Global AI Hackathon 2026
