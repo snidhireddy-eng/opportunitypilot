@@ -1,9 +1,12 @@
+import type { ResearchOutput, ResearchTokenUsage } from './agent2.js';
+
 export type AgentKey = 'alpha' | 'beta';
 
 export type MetricKey =
   | 'accuracy'
   | 'relevance'
   | 'completeness'
+  | 'sourceQuality'
   | 'responseTime'
   | 'cost'
   | 'reliability';
@@ -17,7 +20,7 @@ export type Metric = {
 
 export type AgentScore = {
   metric: MetricKey;
-  score: number;
+  score: number | null;
   unit: string;
 };
 
@@ -26,7 +29,25 @@ export type Agent = {
   name: string;
   tagline: string;
   scores: AgentScore[];
-  overall: number;
+  overall: number | null;
+};
+
+export type BenchmarkAgentStatus = 'completed' | 'not_configured' | 'failed';
+
+export type BenchmarkAgentRun = Agent & {
+  status: BenchmarkAgentStatus;
+  error?: string;
+  research: ResearchOutput | null;
+  model: string | null;
+  usage: ResearchTokenUsage | null;
+};
+
+export type BenchmarkRunResult = {
+  researchQuestion: string;
+  completedAt: string;
+  rubric: string;
+  agents: [BenchmarkAgentRun, BenchmarkAgentRun];
+  winners: Record<MetricKey, AgentKey | 'tie' | null>;
 };
 
 export type HowItWorksStep = {

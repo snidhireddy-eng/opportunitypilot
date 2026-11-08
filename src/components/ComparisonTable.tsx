@@ -16,7 +16,7 @@ function formatScore(value: number, unit: string) {
 }
 
 function isLowerBetter(unit: string) {
-  return unit === 's' || unit === '$';
+  return unit === 's' || unit === 'ms' || unit === '$';
 }
 
 function highlightClass(isBest: boolean) {
@@ -25,13 +25,29 @@ function highlightClass(isBest: boolean) {
 
 export default function ComparisonTable({ metrics, agents }: ComparisonTableProps) {
   const bestByMetric = new Map<string, number>();
+  const winnerByMetric = new Map<string, string>();
   for (const metric of metrics) {
     const scores = agents.map((agent) => {
       const entry = agent.scores.find((score) => score.metric === metric.key);
-      return entry ? entry.score : 0;
+      return entry?.score ?? null;
     });
-    const best = isLowerBetter(metric.unit) ? Math.min(...scores) : Math.max(...scores);
+    if (scores.some((score) => score === null)) {
+      winnerByMetric.set(metric.key, 'Unavailable');
+      continue;
+    }
+
+    const availableScores = scores.filter((score): score is number => score !== null);
+    const best = isLowerBetter(metric.unit)
+      ? Math.min(...availableScores)
+      : Math.max(...availableScores);
     bestByMetric.set(metric.key, best);
+    const winners = agents.filter(
+      (agent) => agent.scores.find((score) => score.metric === metric.key)?.score === best
+    );
+    winnerByMetric.set(
+      metric.key,
+      winners.length > 1 ? 'Tie' : winners[0]?.name ?? 'Unavailable'
+    );
   }
 
   return (
@@ -52,6 +68,9 @@ export default function ComparisonTable({ metrics, agents }: ComparisonTableProp
                   {agent.name}
                 </th>
               ))}
+              <th scope="col" className="py-4 pl-4 font-mono text-xs uppercase tracking-[0.15em] text-ink/65">
+                Winner
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -69,16 +88,20 @@ export default function ComparisonTable({ metrics, agents }: ComparisonTableProp
                       </td>
                     );
                   }
-                  const isBest = entry.score === bestByMetric.get(metric.key);
+                  const isBest =
+                    entry.score !== null && entry.score === bestByMetric.get(metric.key);
                   return (
                     <td
                       key={agent.key}
                       className={`py-5 pl-4 font-mono text-base ${highlightClass(isBest)}`}
                     >
-                      {formatScore(entry.score, entry.unit)}
+                      {entry.score === null ? 'Unavailable' : formatScore(entry.score, entry.unit)}
                     </td>
                   );
                 })}
+                <td className="py-5 pl-4 text-sm text-ink/75">
+                  {winnerByMetric.get(metric.key) ?? 'Unavailable'}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -86,6 +109,7 @@ export default function ComparisonTable({ metrics, agents }: ComparisonTableProp
       </div>
       <p className="mt-6 font-mono text-xs uppercase tracking-[0.12em] text-ink/65">
         Orange values mark the stronger result for each metric. For response time and cost, lower is better.
+        Unavailable results are not ranked.
       </p>
     </>
   );

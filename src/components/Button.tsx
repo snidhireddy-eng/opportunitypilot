@@ -6,13 +6,14 @@ type ButtonProps = {
   to?: string;
   type?: 'button' | 'submit';
   onClick?: () => void;
+  disabled?: boolean;
   variant?: 'primary' | 'secondary';
   size?: 'md' | 'sm';
   className?: string;
 };
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 border font-sans font-extrabold tracking-tight transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex items-center justify-center gap-2 border font-sans font-extrabold tracking-tight transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60';
 
 const VARIANTS = {
   primary: 'border-ink bg-ink text-paper hover:bg-ink/85',
@@ -29,6 +30,7 @@ export default function Button({
   to,
   type = 'button',
   onClick,
+  disabled = false,
   variant = 'primary',
   size = 'md',
   className = '',
@@ -44,7 +46,7 @@ export default function Button({
   }
 
   return (
-    <button type={type} onClick={onClick} className={classes}>
+    <button type={type} onClick={onClick} disabled={disabled} className={classes}>
       {children}
     </button>
   );
