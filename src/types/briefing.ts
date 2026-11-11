@@ -19,6 +19,8 @@ export type BriefingNote = {
 export type BriefingSource = {
   title: string;
   publisher: string;
+  url?: string;
+  publishedDate?: string;
 };
 
 export type ResearchContent = {
@@ -26,6 +28,7 @@ export type ResearchContent = {
   keyInsights: BriefingNote[];
   suggestedQuestions: string[];
   talkingPoints: BriefingNote[];
+  informationGaps?: string[];
   sources: BriefingSource[];
 };
 
