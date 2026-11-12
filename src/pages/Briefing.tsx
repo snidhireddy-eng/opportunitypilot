@@ -62,15 +62,14 @@ export default function Briefing() {
           throw new Error('Please provide your meeting purpose.');
         }
 
-        const response = await fetch('/api/meeting-briefing', {
+        const response = await fetch('/api/briefing', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            companyOrPerson,
-            meetingPurpose,
-          }),
+          body: JSON.stringify(currentRequest),
+           
+            
           signal: controller.signal,
         });
 
