@@ -3,6 +3,7 @@ import express from 'express';
 import agent2Router from './routes/agent2.js';
 import benchmarkRouter from './routes/benchmark.js';
 import geminiRouter from './routes/gemini.js';
+import meetingBriefingRouter from './routes/meetingBriefing.js';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
@@ -12,12 +13,20 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 
 app.use(express.json({ limit: '1mb' }));
+
 app.get('/api/health', (_request, response) => {
-  response.json({ status: 'ok', geminiConfigured: Boolean(process.env.GEMINI_API_KEY?.trim()) });
+  response.json({
+    status: 'ok',
+    geminiConfigured: Boolean(process.env.GEMINI_API_KEY?.trim()),
+    tavilyConfigured: Boolean(process.env.TAVILY_API_KEY?.trim()),
+  });
 });
+
 app.use('/api/gemini', geminiRouter);
 app.use('/api/research/agent2', agent2Router);
 app.use('/api/benchmark', benchmarkRouter);
+app.use('/api/meeting-briefing', meetingBriefingRouter);
+
 app.use((error: unknown, _request: express.Request, response: express.Response, next: express.NextFunction) => {
   console.error('API request failed:', error);
   void next;
