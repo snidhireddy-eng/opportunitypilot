@@ -7,6 +7,7 @@ export type MetricKey =
   | 'relevance'
   | 'completeness'
   | 'sourceQuality'
+  | 'citationValidity'
   | 'responseTime'
   | 'cost'
   | 'reliability';
