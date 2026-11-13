@@ -9,10 +9,10 @@ export default async function handler(req, res) {
     const search = await tvly.search(question, { maxResults: 5 });
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-    const configs = [
-      { key: "alpha", name: "Gemini 2.5 Flash", model: "gemini-2.5-flash" },
-      { key: "beta", name: "Gemini 2.5 Flash-Lite", model: "gemini-2.5-flash-lite" }
-    ];
+  const configs = [
+  { key: "alpha", name: "Gemini 3.8 Flash", model: "gemini-3.8-flash" },
+  { key: "beta", name: "Gemini 3.5 Flash-Lite", model: "gemini-3.5-flash-lite" }
+];
 
     const agents = await Promise.all(
       configs.map(async (cfg) => {
