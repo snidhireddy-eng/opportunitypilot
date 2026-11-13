@@ -44,10 +44,12 @@ Use exactly these Markdown headings:
 ## Information Gaps`;
 
     let reply;
+    let selectedModel = null;
     let lastError;
     for (const model of MODELS) {
       try {
         reply = await ai.models.generateContent({ model, contents: prompt });
+        selectedModel = model;
         break;
       } catch (error) {
         lastError = error;
@@ -55,7 +57,12 @@ Use exactly these Markdown headings:
       }
     }
     if (!reply?.text) throw lastError || new Error("The AI model returned an empty briefing.");
-    return res.status(200).json({ success: true, briefing: reply.text, sources, model: reply.modelVersion || MODELS[0] });
+    return res.status(200).json({
+      success: true,
+      briefing: reply.text,
+      sources,
+      model: selectedModel || reply.modelVersion || "Unknown model"
+    });
   } catch (err) {
     const message = String(err?.message || err);
     const status = /503|UNAVAILABLE|high demand|overloaded/i.test(message) ? 503 : 500;
