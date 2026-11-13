@@ -73,7 +73,7 @@ function listItems(section) {
 }
 
 function scoreCitationValidity(output, sources) {
-  const citations = [...output.matchAll(/\\[Source:\\s*([^\\]]+)\\]/gi)];
+  const citations = [...output.matchAll(/\[Source:\s*([^\]]+)\]/gi)];
   if (!citations.length) return 0;
   const knownTitles = new Set(
     sources.map((source) => (source.title || "").trim().toLowerCase()).filter(Boolean)
