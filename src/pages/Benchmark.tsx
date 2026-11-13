@@ -125,8 +125,8 @@ export default function Benchmark() {
             <Eyebrow>BENCHMARK</Eyebrow>
             <h1 className="mt-6 text-5xl sm:text-6xl md:text-7xl">Compare AI agents</h1>
             <p className="mt-8 text-lg leading-[1.5] text-ink/80 md:text-xl">
-              Send the same opportunity question and evaluation requirements to both agents, then compare
-              their live outputs using explicit, reproducible checks.
+              Send the same opportunity question and evaluation requirements to both Gemini models, then compare
+              their live outputs. The live run requires Vercel server-side Tavily and Gemini API keys.
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Button to="/prepare" className="w-full sm:w-auto">
@@ -311,8 +311,8 @@ export default function Benchmark() {
         </div>
         <p className="mt-6 text-base leading-[1.5] text-ink/80">
           These fictional scores are for layout demonstration only. Real-run overall scores average the
-          available structural completeness, relevance, and source metadata checks; response time and cost
-          are shown separately.
+          available structural completeness, relevance, and source metadata checks. Response time and reliability
+          are shown separately; cost and factual accuracy remain unavailable until verified.
         </p>
       </Section>
 
