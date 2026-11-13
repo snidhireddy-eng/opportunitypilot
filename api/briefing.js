@@ -1,23 +1,64 @@
 import { tavily } from "@tavily/core";
 import { GoogleGenAI } from "@google/genai";
 
+const MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
+
+function isTemporary(error) {
+  const message = String(error?.message || error);
+  return /503|UNAVAILABLE|429|RESOURCE_EXHAUSTED|high demand|overloaded/i.test(message);
+}
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+  if (req.method !== "POST") return res.status(405).json({ success: false, error: "POST only" });
   try {
-    const { company, personName, personRole, meetingType, purpose, background, goals } = req.body;
+    const { company, personName, personRole, meetingType, purpose, background, goals } = req.body || {};
+    if (!process.env.TAVILY_API_KEY || !process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ success: false, error: "Server configuration is incomplete. Check the required API environment variables in Vercel." });
+    }
+    if (!company?.trim() && !personName?.trim()) {
+      return res.status(400).json({ success: false, error: "Please provide a company or person name." });
+    }
+
     const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
-    const search = await tvly.search(`${company} ${personName || ""} company overview recent news`, { maxResults: 5 });
-
+    const search = await tvly.search(`${company || ""} ${personName || ""} ${personRole || ""} company overview recent news`, { maxResults: 5 });
+    const sources = (search.results || []).map((r) => ({ title: r.title || null, url: r.url }));
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const prompt = `Write a meeting briefing for ${company} (Person: ${personName || "N/A"}, Role: ${personRole || "N/A"}, Meeting Type: ${meetingType || "N/A"}, Purpose: ${purpose || "N/A"}, Background: ${background || "N/A"}, Goals: ${goals || "N/A"}) using these sources:\n${JSON.stringify(search.results)}\n\nUse ONLY these exact markdown headings:\n## Executive Summary\n## Recent Developments\n## Important Insights\n## Suggested Questions\n## Personalised Talking Points\n## Information Gaps`;
+    const prompt = `Create a practical, fact-grounded meeting briefing for:
+Company: ${company || "Not provided"}
+Person: ${personName || "Not provided"}
+Role: ${personRole || "Not provided"}
+Meeting type: ${meetingType || "Not provided"}
+Purpose: ${purpose || "Not provided"}
+Background: ${background || "Not provided"}
+Goals: ${goals || "Not provided"}
 
-    const reply = await ai.models.generateContent({
-      model: "gemini-3.7-flash",
-      contents: prompt,
-    });
+Use the live research sources below. Do not invent facts. Clearly mark missing information.
+${JSON.stringify(search.results || [])}
 
-    res.status(200).json({ success: true, briefing: reply.text, sources: search.results });
+Use exactly these Markdown headings:
+## Executive Summary
+## Recent Developments
+## Important Insights
+## Suggested Questions
+## Personalised Talking Points
+## Information Gaps`;
+
+    let reply;
+    let lastError;
+    for (const model of MODELS) {
+      try {
+        reply = await ai.models.generateContent({ model, contents: prompt });
+        break;
+      } catch (error) {
+        lastError = error;
+        if (!isTemporary(error) || model === MODELS[MODELS.length - 1]) throw error;
+      }
+    }
+    if (!reply?.text) throw lastError || new Error("The AI model returned an empty briefing.");
+    return res.status(200).json({ success: true, briefing: reply.text, sources, model: reply.modelVersion || MODELS[0] });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    const message = String(err?.message || err);
+    const status = /503|UNAVAILABLE|high demand|overloaded/i.test(message) ? 503 : 500;
+    return res.status(status).json({ success: false, error: status === 503 ? "Both Gemini models are temporarily unavailable. Please retry in a few minutes." : message });
   }
 }
