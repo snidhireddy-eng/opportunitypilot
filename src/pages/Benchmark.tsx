@@ -22,7 +22,7 @@ const LIVE_METRICS: Metric[] = [
   {
     key: 'completeness',
     label: 'Completeness',
-    description: 'Presence of expected response sections and source links; this does not establish factual completeness.',
+    description: 'Share of six required report sections present in the response; this measures structure, not factual completeness.',
     unit: '/100',
   },
   {
@@ -46,7 +46,7 @@ const LIVE_METRICS: Metric[] = [
   {
     key: 'cost',
     label: 'API cost',
-    description: 'Calculated from reported input/output token usage and configured model pricing; otherwise unavailable.',
+    description: 'Estimated from reported token usage at Google's published Standard paid-tier rates; free-tier billing may differ.',
     unit: '$',
   },
 ];
