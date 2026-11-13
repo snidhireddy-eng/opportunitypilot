@@ -72,6 +72,18 @@ function listItems(section) {
     .filter(Boolean);
 }
 
+function scoreCitationValidity(output, sources) {
+  const citations = [...output.matchAll(/\\[Source:\\s*([^\\]]+)\\]/gi)];
+  if (!citations.length) return 0;
+  const knownTitles = new Set(
+    sources.map((source) => (source.title || "").trim().toLowerCase()).filter(Boolean)
+  );
+  const validCount = citations.filter((match) =>
+    knownTitles.has(match[1].trim().toLowerCase())
+  ).length;
+  return Math.round((validCount / citations.length) * 100);
+}
+
 function estimateCost() {
   // Do not guess model-specific prices; show cost as unavailable until verified.
   return null;
@@ -88,6 +100,7 @@ function buildScores({ cfg, output, executionMs, sources, usage, status }) {
   const sourceQuality = status === "completed" && sources.length
     ? Math.round(sources.filter((source) => source.title && /^https:\/\//i.test(source.url)).length / sources.length * 100)
     : status === "completed" ? 0 : null;
+  const citationValidity = status === "completed" ? scoreCitationValidity(output, sources) : null;
   const cost = status === "completed" && usage ? estimateCost(cfg, usage) : null;
 
   const availableQualityScores = [relevance, completeness, sourceQuality].filter(
@@ -100,6 +113,7 @@ function buildScores({ cfg, output, executionMs, sources, usage, status }) {
       { metric: "relevance", score: relevance, unit: "/100" },
       { metric: "completeness", score: completeness, unit: "/100" },
       { metric: "sourceQuality", score: sourceQuality, unit: "/100" },
+      { metric: "citationValidity", score: citationValidity, unit: "/100" },
       { metric: "responseTime", score: status === "completed" ? executionMs : null, unit: "ms" },
       { metric: "cost", score: cost, unit: "$" },
       { metric: "reliability", score: status === "completed" ? 100 : 0, unit: "/100" }
@@ -122,6 +136,8 @@ Additional requirements: ${requirements || "None"}
 
 Instructions:
 - Use only the supplied sources for factual claims.
+- After each factual claim, add a citation in exactly this format: [Source: exact source title]. The title must exactly match one supplied source title.
+- Never cite a source that was not supplied. If no source supports a claim, state that evidence is unavailable.
 - Do not invent eligibility rules, dates, fees, or application links.
 - Verify whether registration is currently open using explicit dates or status statements in the supplied sources.
 - Treat an application deadline or event end date earlier than the research date as expired; do not describe that opportunity as currently open.
@@ -262,7 +278,7 @@ export default async function handler(req, res) {
       )
     );
 
-    const metricKeys = ["accuracy", "relevance", "completeness", "sourceQuality", "responseTime", "cost", "reliability"];
+    const metricKeys = ["accuracy", "relevance", "completeness", "sourceQuality", "citationValidity", "responseTime", "cost", "reliability"];
     const winners = {};
     for (const metric of metricKeys) {
       const a = agents[0].scores.find((score) => score.metric === metric)?.score;
@@ -282,7 +298,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       researchQuestion: question,
       completedAt: new Date().toISOString(),
-      rubric: "Both models receive identical inputs and Tavily sources. Relevance is a keyword-overlap heuristic; completeness checks for six required headings; source quality checks for titled HTTPS links; response time is measured request duration; reliability records request success. Cost is unavailable until current model-specific prices are verified. Accuracy requires independent fact-checking and is not scored.",
+      rubric: "Both models receive identical inputs and Tavily sources. Relevance is a keyword-overlap heuristic; completeness checks for six required headings; source quality checks for titled HTTPS links; citation validity checks whether cited titles match supplied sources (not whether claims are true); response time is measured request duration; reliability records request success. Cost is unavailable until current model-specific prices are verified. Accuracy requires independent fact-checking and is not scored.",
       agents,
       winners
     });
