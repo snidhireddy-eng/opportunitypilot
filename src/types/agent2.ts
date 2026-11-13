@@ -38,6 +38,7 @@ export type ResearchOutput = {
   executiveSummary: string;
   keyFindings: ResearchFinding[];
   eligibilityCriteria: string[];
+  applicationSteps?: string[];
   deadlines: ResearchDeadline[];
   uncertainInformation: string[];
   sources: ResearchSource[];
