@@ -41,7 +41,7 @@ export default function PreparationSummary({ request, onEdit, onClear }: Prepara
           Your preparation details are collected.
         </h2>
         <p className="border border-ink/20 bg-note px-5 py-4 text-base leading-[1.5] text-ink">
-          Live research has not started and no briefing has been generated. Research is not connected yet.
+          Your details are saved. Open your meeting briefing to start live research and generate your personalised preparation report.
         </p>
       </div>
 
