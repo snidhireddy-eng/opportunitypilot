@@ -7,7 +7,7 @@ type ComparisonTableProps = {
 
 function formatScore(value: number, unit: string) {
   if (unit === '$') {
-    return `$${value.toFixed(2)}`;
+    return `$${value.toFixed(6)}`;
   }
   if (unit === 's') {
     return `${value}s`;
