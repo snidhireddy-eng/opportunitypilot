@@ -4,6 +4,12 @@
   "functions": {
     "api/benchmark.js": {
       "maxDuration": 60
+    },
+    "api/briefing.js": {
+      "maxDuration": 60
+    },
+    "api/research/agent2.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
