@@ -1,4 +1,5 @@
 import type { ResearchOutput, ResearchTokenUsage } from '@/types/agent2';
+import MarkdownContent from '@/components/MarkdownContent';
 
 type ResearchResultCardProps = {
   agent: {
@@ -21,7 +22,7 @@ export default function ResearchResultCard({ agent }: ResearchResultCardProps) {
       <header>
         <p className="font-mono text-xs uppercase tracking-[0.15em] text-ink/65">{agent.name} output</p>
         <h3 className="mt-3 text-2xl md:text-3xl">{result.title}</h3>
-        <p className="mt-4 text-base leading-[1.5] text-ink/80">{result.executiveSummary}</p>
+        <MarkdownContent content={result.executiveSummary} className="mt-4 text-base text-ink/80" />
         <p className="mt-4 font-mono text-xs uppercase tracking-[0.1em] text-ink/65">
           {agent.model ? `${agent.model} · ` : ''}
           {promptTokens !== undefined && responseTokens !== undefined
@@ -45,6 +46,15 @@ export default function ResearchResultCard({ agent }: ResearchResultCardProps) {
           <p className="mt-2 text-sm text-ink/70">No findings were returned.</p>
         )}
       </section>
+
+      {result.applicationSteps && result.applicationSteps.length > 0 && (
+        <section>
+          <h4 className="text-lg">Application steps</h4>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-ink/80">
+            {result.applicationSteps.map((step, index) => <li key={`${step}-${index}`}>{step}</li>)}
+          </ol>
+        </section>
+      )}
 
       {(result.eligibilityCriteria.length > 0 || result.deadlines.length > 0) && (
         <section className="grid gap-6 sm:grid-cols-2">
