@@ -25,7 +25,7 @@ The following features are implemented in the current frontend:
 - **Navigation:** Provides navigation between the main project pages.
 - **Responsive Layout:** Uses a responsive frontend layout.
 - **Research Agent 2:** Uses the Google Gemini JavaScript SDK with Google Search grounding through the backend.
-- **Live Benchmarking:** Compares compatible Research Agent 1 and Research Agent 2 outputs using transparent checks.
+- **Live Benchmarking:** The deployed Vercel endpoint sends the same task and Tavily sources to Gemini 3.8 Flash and Gemini 3.5 Flash-Lite, then compares their results with transparent checks. The separate local Express backend supports an optional external Agent 1 adapter.
 
 ## Pages
 
@@ -139,5 +139,5 @@ The goal is to develop OpportunityPilot into a platform that can generate resear
 ---
 
 **Project:** OpportunityPilot  
-**Status:** Frontend prototype with Gemini research backend
+**Status:** Deployed prototype with live Tavily research and Gemini-powered briefing and benchmarking APIs
 **Hackathon:** Global AI Hackathon 2026
