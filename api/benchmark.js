@@ -63,7 +63,7 @@ function extractSection(markdown, heading) {
   if (headingIndex < 0) return "";
   const content = [];
   for (let index = headingIndex + 1; index < lines.length; index += 1) {
-    if (/^#{1,6}\\s+/.test(lines[index].trim())) break;
+    if (/^#{1,6}\s+/.test(lines[index].trim())) break;
     content.push(lines[index]);
   }
   return content.join("\n").trim();
@@ -72,7 +72,7 @@ function extractSection(markdown, heading) {
 function listItems(section) {
   return section
     .split(/\r?\n/)
-    .map((line) => line.replace(/^\\s*(?:[-*•]|\\d+[.)])\\s*/, "").trim())
+    .map((line) => line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, "").trim())
     .filter(Boolean);
 }
 
