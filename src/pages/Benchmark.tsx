@@ -22,34 +22,40 @@ const LIVE_METRICS: Metric[] = [
   {
     key: 'completeness',
     label: 'Completeness',
-    description: 'Share of six required report sections present in the response; this measures structure, not factual completeness.',
+    description: 'Share of six required report sections present; this measures structure, not factual completeness.',
     unit: '/100',
   },
   {
     key: 'relevance',
     label: 'Relevance',
-    description: 'Deterministic overlap between important question terms and the returned research text.',
+    description: 'Keyword overlap between important question terms and the returned research text.',
     unit: '/100',
   },
   {
     key: 'sourceQuality',
     label: 'Source quality',
-    description: 'Metadata audit: share of source links with a title and HTTPS URL, not an independent fact-check.',
+    description: 'Share of source links with a title and HTTPS URL; this is not an independent fact-check.',
     unit: '/100',
   },
   {
     key: 'responseTime',
     label: 'Response time',
-    description: 'Measured wall-clock time for each agent’s request.',
+    description: 'Measured wall-clock time for each model request.',
     unit: 'ms',
   },
   {
     key: 'cost',
     label: 'API cost',
     description: 'Unavailable until current model-specific pricing is verified; no estimated billing amount is presented.',
-    unit: '
+    unit: '$',
+  },
+  {
+    key: 'reliability',
+    label: 'Reliability',
+    description: 'Whether each model request completed successfully; this is not a quality score.',
+    unit: '/100',
+  },
 ];
-
 const EMPTY_REQUEST: ResearchAgentRequest = {
   researchQuestion: '',
   opportunityCategory: '',
