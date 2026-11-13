@@ -272,11 +272,41 @@ export default async function handler(req, res) {
     const sources = Array.isArray(search.results) ? search.results : [];
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-    const agents = await Promise.all(
+    const settledAgents = await Promise.allSettled(
       CONFIGS.map((config) =>
         runAgent(ai, config, question, category, audience, requirements, sources)
       )
     );
+
+    // Preserve one result per configured agent even if an unexpected error escapes runAgent.
+    const agents = settledAgents.map((result, index) => {
+      if (result.status === "fulfilled") return result.value;
+
+      const config = CONFIGS[index];
+      const executionMs = 0;
+      const cfg = {
+        inputText: [question, category, audience, requirements].filter(Boolean).join(" ")
+      };
+      return {
+        key: config.key,
+        name: config.name,
+        tagline: config.model,
+        status: "failed",
+        error: String(result.reason?.message || result.reason || "Agent execution failed.").slice(0, 500),
+        model: config.model,
+        research: null,
+        usage: null,
+        executionMs,
+        ...buildScores({
+          cfg,
+          output: "",
+          executionMs,
+          sources: [],
+          usage: null,
+          status: "failed"
+        })
+      };
+    });
 
     const metricKeys = ["accuracy", "relevance", "completeness", "sourceQuality", "citationValidity", "responseTime", "cost", "reliability"];
     const winners = {};
