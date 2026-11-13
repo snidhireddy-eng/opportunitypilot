@@ -54,7 +54,7 @@ export default function About() {
         <p className="text-lg leading-[1.5] text-ink/80">
           OpportunityPilot takes a few details about an upcoming meeting &mdash; the company, the person, the
           purpose &mdash; and turns them into a printable briefing. The briefing covers company background, key
-          insights, suggested questions and personalised talking points, each tied to the source it came from.
+          insights, suggested questions and personalised talking points, alongside a list of research sources.
         </p>
         <p className="mt-5 text-lg leading-[1.5] text-ink/80">
           Alongside the briefing, two AI research agents are given the same task and scored against each other,
@@ -77,8 +77,7 @@ export default function About() {
 
       <BriefingSection number="03" title="How it works">
         <p className="text-lg leading-[1.5] text-ink/80">
-          The same preparation brief moves through four stages. Nothing here is connected yet &mdash; this
-          describes the intended flow.
+          The live research and benchmarking workflows use server-side Tavily and Gemini integrations.
         </p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {HOW_STEPS.map((step) => (
