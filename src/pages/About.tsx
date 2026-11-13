@@ -7,22 +7,22 @@ const HOW_STEPS = [
   {
     number: '01',
     title: 'Research',
-    body: 'Tavily searches the web for current, relevant sources about the company and the people you are meeting.',
+    body: 'Tavily retrieves current web sources for the company, person, or opportunity you want to research.',
   },
   {
     number: '02',
     title: 'Reason',
-    body: 'An AI agent reads those sources and writes a structured briefing with insights, questions and talking points.',
+    body: 'Gemini uses the retrieved sources and your meeting context to prepare a structured briefing with insights, questions and talking points.',
   },
   {
     number: '03',
     title: 'Cite',
-    body: 'Every claim in the briefing links back to the source it came from, so you can check it yourself.',
+    body: 'The briefing includes a source list so you can open the underlying pages and verify important details. Source presence does not guarantee every claim is true.',
   },
   {
     number: '04',
     title: 'Evaluate',
-    body: 'The same brief goes to two agents and their outputs are scored side by side on accuracy, relevance, completeness, speed, cost and reliability.',
+    body: 'The same opportunity brief is sent to two configured Gemini models. Their outputs are compared using structural, relevance, source, citation-traceability, response-time and reliability checks. Factual accuracy and cost remain unavailable unless independently verified.',
   },
 ];
 
@@ -35,8 +35,8 @@ export default function About() {
             <Eyebrow>ABOUT</Eyebrow>
             <h1 className="mt-6 text-5xl sm:text-6xl md:text-7xl">About OpportunityPilot</h1>
             <p className="mt-8 text-lg leading-[1.5] text-ink/80 md:text-xl">
-              OpportunityPilot is a meeting preparation tool. It researches the company and the people you are
-              meeting, writes a source-backed briefing, and shows you how reliable that research is.
+              OpportunityPilot researches meetings and opportunities using live web sources, creates a structured
+              preparation briefing, and lets you compare two Gemini models on the same research task.
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Button to="/prepare" className="w-full sm:w-auto">
@@ -58,7 +58,7 @@ export default function About() {
         </p>
         <p className="mt-5 text-lg leading-[1.5] text-ink/80">
           Alongside the briefing, two AI research agents are given the same task and scored against each other,
-          so you can see not just what the research says but how trustworthy the process behind it is.
+          so you can compare their outputs and inspect transparent metrics. The current metrics do not prove factual accuracy.
         </p>
       </BriefingSection>
 
@@ -98,9 +98,9 @@ export default function About() {
           client conversation.
         </p>
         <p className="mt-5 text-lg leading-[1.5] text-ink/80">
-          That is why every claim in an OpportunityPilot briefing is meant to link back to a source you can open
-          and check. And it is why two agents are scored side by side: so the reliability of the research is
-          visible, not hidden.
+          OpportunityPilot displays source links and citation traceability checks to make research easier to audit.
+          These checks help with transparency, but users should still verify important facts against the original
+          sources. Two Gemini models are compared side by side using the same research question.
         </p>
       </BriefingSection>
 
@@ -128,8 +128,9 @@ export default function About() {
         <div className="max-w-2xl border border-ink bg-note p-6 md:p-8">
           <Eyebrow>PROTOTYPE</Eyebrow>
           <p className="mt-4 text-lg leading-[1.5] text-ink">
-            OpportunityPilot is a hackathon prototype. Live research and agent benchmarking are not connected
-            yet, and some content on this site is sample data.
+            OpportunityPilot is a hackathon prototype with live Tavily research and Gemini-powered briefing and
+            benchmarking endpoints. Sample sections are labelled separately. Factual accuracy is not independently
+            scored, and API cost remains unavailable unless verified pricing is configured.
           </p>
         </div>
       </Section>
