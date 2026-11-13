@@ -104,9 +104,8 @@ function buildScores({ cfg, output, executionMs, sources, usage, status }) {
       { metric: "cost", score: cost, unit: "$" },
       { metric: "reliability", score: status === "completed" ? 100 : 0, unit: "/100" }
     ],
-    overall: availableQualityScores.length
-      ? Math.round(availableQualityScores.reduce((sum, score) => sum + score, 0) / availableQualityScores.length)
-      : null
+    // Do not combine heuristic checks into an overall quality score.
+    overall: null
   };
 }
 
