@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     const prompt = `Write a meeting briefing for ${company} (Person: ${personName || "N/A"}, Role: ${personRole || "N/A"}, Meeting Type: ${meetingType || "N/A"}, Purpose: ${purpose || "N/A"}, Background: ${background || "N/A"}, Goals: ${goals || "N/A"}) using these sources:\n${JSON.stringify(search.results)}\n\nUse ONLY these exact markdown headings:\n## Executive Summary\n## Recent Developments\n## Important Insights\n## Suggested Questions\n## Personalised Talking Points\n## Information Gaps`;
 
     const reply = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
     });
 
