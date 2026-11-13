@@ -112,7 +112,9 @@ function buildScores({ cfg, output, executionMs, sources, usage, status }) {
 
 async function runAgent(ai, config, question, category, audience, requirements, sources) {
   const start = Date.now();
+  const asOfDate = new Date().toISOString().slice(0, 10);
   const prompt = `Research the opportunity below using the supplied live web sources. Both models receive the same task and sources.
+Research date (UTC): ${asOfDate}. Treat this as the current date when evaluating deadlines and event status.
 
 Research question: ${question}
 Opportunity category: ${category || "Not specified"}
@@ -122,6 +124,10 @@ Additional requirements: ${requirements || "None"}
 Instructions:
 - Use only the supplied sources for factual claims.
 - Do not invent eligibility rules, dates, fees, or application links.
+- Verify whether registration is currently open using explicit dates or status statements in the supplied sources.
+- Treat an application deadline or event end date earlier than the research date as expired; do not describe that opportunity as currently open.
+- If dates are missing, conflicting, or unclear, label the status "Unverified" rather than assuming it is upcoming or open.
+- Clearly separate currently open opportunities, upcoming opportunities not yet open, expired opportunities, and unverified opportunities.
 - Say "Not stated in the available sources" when evidence is missing.
 - Tailor the findings to the target audience.
 - Use exactly these Markdown headings:
@@ -239,10 +245,15 @@ export default async function handler(req, res) {
     if (!question) return res.status(400).json({ error: "Enter a research question." });
 
     const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
-    const search = await tvly.search(
-      [question, category, audience].filter(Boolean).join(" "),
-      { maxResults: 5 }
-    );
+    const searchDate = new Date().toISOString().slice(0, 10);
+    const searchQuery = [
+      question,
+      category,
+      audience,
+      "upcoming current opportunities registration open deadlines",
+      searchDate.slice(0, 4)
+    ].filter(Boolean).join(" ");
+    const search = await tvly.search(searchQuery, { maxResults: 8 });
     const sources = Array.isArray(search.results) ? search.results : [];
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
