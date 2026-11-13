@@ -4,7 +4,7 @@
 
 ## About the Project
 
-OpportunityPilot is a React frontend with a small Express API. It supports meeting preparation and a live, Google Gemini-powered opportunity research and agent comparison flow.
+OpportunityPilot is a React frontend with Vercel serverless API routes and a local Express development backend. It supports live meeting preparation, Tavily-powered opportunity research, and comparison of two Gemini models.
 
 The project aims to bring meeting preparation and AI agent evaluation together in one platform.
 
@@ -33,8 +33,8 @@ The following features are implemented in the current frontend:
 |---|---|
 | Home | Implemented |
 | Prepare | Frontend form implemented |
-| Meeting Briefing | Placeholder |
-| Agent Benchmarking | Live-run form and comparison; Agent 1 requires its adapter endpoint |
+| Meeting Briefing | Live Tavily + Gemini API route; requires server-side API keys |
+| Agent Benchmarking | Live comparison of Gemini 3.8 Flash and Gemini 3.5 Flash-Lite, with independent failure reporting |
 | About | Project information |
 
 ## Technology Stack
@@ -130,7 +130,7 @@ For cost calculation, configure both `GEMINI_INPUT_USD_PER_MILLION` and `GEMINI_
 
 ## Current Development Status
 
-The meeting-preparation flow remains a frontend prototype and does not generate a live meeting briefing. Research Agent 2 and live benchmarking are implemented, but require a configured Gemini API key. Real two-agent benchmarking additionally requires Person 2's Agent 1 endpoint. The benchmark page keeps its fictional sample data separate from live results.
+The deployed Vercel app includes a live meeting-briefing endpoint (`api/briefing.js`), a standalone research endpoint (`api/research/agent2.js`), and a two-model benchmark endpoint (`api/benchmark.js`). These require server-side `TAVILY_API_KEY` and `GEMINI_API_KEY` values. Gemini provider availability can vary; a 503 response is a temporary provider failure, not a successful model result. The benchmark reports individual agent failures without discarding the other result. Factual accuracy is not independently scored, citation validity checks source-title traceability rather than truth, and API cost remains unavailable until verified model pricing is configured. Fictional sample data is separate from live results.
 
 ## Project Goal
 
