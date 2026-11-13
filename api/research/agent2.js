@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const prompt = `Analyze "${question}" using these sources:\n${JSON.stringify(search.results)}\n\nReturn ONLY valid JSON with these exact keys:\n{"title":"string","executiveSummary":"string","keyFindings":[{"title":"string","detail":"string"}],"eligibilityCriteria":["string"],"deadlines":[{"name":"string","date":"string","detail":"string"}],"uncertainInformation":["string"]}`;
 
     const reply = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash-lite",
       contents: prompt,
       config: { responseMimeType: "application/json" }
     });
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       sources: search.results.map((r) => ({ title: r.title || null, url: r.url })),
       status: "completed",
       executionMs: Date.now() - start,
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash-lite",
       usage: null
     });
   } catch (err) {
