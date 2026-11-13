@@ -2,122 +2,294 @@ import { tavily } from "@tavily/core";
 import { GoogleGenAI } from "@google/genai";
 
 const CONFIGS = [
-  { key: "alpha", name: "Gemini 3.8 Flash", model: "gemini-3.8-flash" },
-  { key: "beta", name: "Gemini 3.5 Flash-Lite", model: "gemini-3.5-flash-lite" }
+  {
+    key: "alpha",
+    name: "Gemini 3.8 Flash",
+    model: "gemini-3.8-flash",
+    inputPricePerMillion: 0.75,
+    outputPricePerMillion: 3.75
+  },
+  {
+    key: "beta",
+    name: "Gemini 3.5 Flash-Lite",
+    model: "gemini-3.5-flash-lite",
+    inputPricePerMillion: 0.30,
+    outputPricePerMillion: 2.50
+  }
 ];
 
-function scoreRelevance(question, text) {
-  const terms = question.toLowerCase().match(/[a-z0-9]{4,}/g) || [];
-  const unique = [...new Set(terms)];
-  if (!unique.length) return null;
-  const body = text.toLowerCase();
-  return Math.round(unique.filter((term) => body.includes(term)).length / unique.length * 100);
+const REQUIRED_SECTIONS = [
+  "Executive Summary",
+  "Key Findings",
+  "Eligibility and Fit",
+  "Application Steps",
+  "Deadlines and Dates",
+  "Sources and Caveats"
+];
+
+const STOP_WORDS = new Set([
+  "about", "after", "also", "among", "available", "based", "before",
+  "being", "between", "could", "from", "have", "into", "more", "most",
+  "other", "please", "should", "that", "their", "there", "these", "they",
+  "this", "those", "through", "under", "using", "what", "when", "where",
+  "which", "with", "would", "your"
+]);
+
+function text(value, maxLength = 3000) {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
-async function runAgent(ai, cfg, question, sources) {
+function questionTerms(value) {
+  return [...new Set(
+    (value.toLowerCase().match(/[a-z0-9]{3,}/g) || [])
+      .filter((term) => !STOP_WORDS.has(term))
+  )];
+}
+
+function scoreRelevance(input, output) {
+  const terms = questionTerms(input);
+  if (!terms.length || !output) return null;
+  const normalizedOutput = output.toLowerCase();
+  return Math.round(
+    terms.filter((term) => normalizedOutput.includes(term)).length / terms.length * 100
+  );
+}
+
+function extractSection(markdown, heading) {
+  const lines = markdown.split(/\r?\n/);
+  const headingIndex = lines.findIndex((line) =>
+    new RegExp("^#{1,6}\\s+" + heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*$", "i").test(line.trim())
+  );
+  if (headingIndex < 0) return "";
+  const content = [];
+  for (let index = headingIndex + 1; index < lines.length; index += 1) {
+    if (/^#{1,6}\\s+/.test(lines[index].trim())) break;
+    content.push(lines[index]);
+  }
+  return content.join("\n").trim();
+}
+
+function listItems(section) {
+  return section
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^\\s*(?:[-*•]|\\d+[.)])\\s*/, "").trim())
+    .filter(Boolean);
+}
+
+function estimateCost(cfg, usage) {
+  const inputTokens = usage.promptTokenCount;
+  const outputTokens = (usage.candidatesTokenCount || 0) + (usage.thoughtsTokenCount || 0);
+  if (!Number.isFinite(inputTokens) || !Number.isFinite(outputTokens)) return null;
+  return Number((
+    inputTokens * cfg.inputPricePerMillion / 1_000_000 +
+    outputTokens * cfg.outputPricePerMillion / 1_000_000
+  ).toFixed(8));
+}
+
+function buildScores({ cfg, output, executionMs, sources, usage, status }) {
+  const relevance = status === "completed" ? scoreRelevance(cfg.inputText, output) : null;
+  const sectionCount = REQUIRED_SECTIONS.filter((heading) =>
+    new RegExp("^#{1,6}\\s+" + heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*$", "im").test(output)
+  ).length;
+  const completeness = status === "completed"
+    ? Math.round(sectionCount / REQUIRED_SECTIONS.length * 100)
+    : null;
+  const sourceQuality = status === "completed" && sources.length
+    ? Math.round(sources.filter((source) => source.title && /^https:\/\//i.test(source.url)).length / sources.length * 100)
+    : status === "completed" ? 0 : null;
+  const cost = status === "completed" && usage ? estimateCost(cfg, usage) : null;
+
+  const availableQualityScores = [relevance, completeness, sourceQuality].filter(
+    (score) => typeof score === "number"
+  );
+
+  return {
+    scores: [
+      { metric: "accuracy", score: null, unit: "/100" },
+      { metric: "relevance", score: relevance, unit: "/100" },
+      { metric: "completeness", score: completeness, unit: "/100" },
+      { metric: "sourceQuality", score: sourceQuality, unit: "/100" },
+      { metric: "responseTime", score: executionMs, unit: "ms" },
+      { metric: "cost", score: cost, unit: "$" },
+      { metric: "reliability", score: status === "completed" ? 100 : 0, unit: "/100" }
+    ],
+    overall: availableQualityScores.length
+      ? Math.round(availableQualityScores.reduce((sum, score) => sum + score, 0) / availableQualityScores.length)
+      : null
+  };
+}
+
+async function runAgent(ai, config, question, category, audience, requirements, sources) {
   const start = Date.now();
-  const prompt = `Answer the research question using the sources. Be specific, distinguish verified facts from uncertainty, and do not invent details.
-Question: ${question}
-Sources: ${JSON.stringify(sources)}`;
+  const prompt = `Research the opportunity below using the supplied live web sources. Both models receive the same task and sources.
+
+Research question: ${question}
+Opportunity category: ${category || "Not specified"}
+Target audience: ${audience || "Not specified"}
+Additional requirements: ${requirements || "None"}
+
+Instructions:
+- Use only the supplied sources for factual claims.
+- Do not invent eligibility rules, dates, fees, or application links.
+- Say "Not stated in the available sources" when evidence is missing.
+- Tailor the findings to the target audience.
+- Use exactly these Markdown headings:
+## Executive Summary
+## Key Findings
+## Eligibility and Fit
+## Application Steps
+## Deadlines and Dates
+## Sources and Caveats
+
+Live research sources:
+${JSON.stringify(sources)}`;
+
+  const cfg = { ...config, inputText: [question, category, audience, requirements].filter(Boolean).join(" ") };
+
   try {
-    const response = await ai.models.generateContent({ model: cfg.model, contents: prompt });
+    const response = await ai.models.generateContent({
+      model: config.model,
+      contents: prompt
+    });
     const executionMs = Date.now() - start;
     const output = response.text || "";
+    if (!output.trim()) throw new Error("The model returned an empty response.");
+
     const usage = response.usageMetadata || {};
-    const sourceList = sources.map((r) => ({ title: r.title || null, url: r.url }));
-    const hasStructure = /\n|\.|\?|!/.test(output);
-    const relevance = scoreRelevance(question, output);
-    const sourceQuality = sourceList.length
-      ? Math.round(sourceList.filter((s) => s.title && /^https:\/\//i.test(s.url)).length / sourceList.length * 100)
-      : 0;
+    const sourceList = sources
+      .filter((source) => typeof source.url === "string" && /^https?:\/\//i.test(source.url))
+      .map((source) => ({ title: source.title || null, url: source.url }));
+    const keyFindings = listItems(extractSection(output, "Key Findings")).map((detail, index) => ({
+      title: `Finding ${index + 1}`,
+      detail
+    }));
+    const eligibilityCriteria = listItems(extractSection(output, "Eligibility and Fit"));
+    const deadlineItems = listItems(extractSection(output, "Deadlines and Dates"));
+    const scores = buildScores({
+      cfg,
+      output,
+      executionMs,
+      sources: sourceList,
+      usage,
+      status: "completed"
+    });
+
     return {
-      key: cfg.key,
-      name: cfg.name,
-      tagline: cfg.model,
+      key: config.key,
+      name: config.name,
+      tagline: config.model,
       status: "completed",
-      error: undefined,
-      model: cfg.model,
+      model: config.model,
       research: {
         title: question,
         executiveSummary: output,
-        keyFindings: [],
-        eligibilityCriteria: [],
-        deadlines: [],
-        uncertainInformation: ["Automated relevance and source-metadata checks are not independent factual verification."],
+        keyFindings,
+        eligibilityCriteria,
+        deadlines: deadlineItems.map((detail, index) => ({
+          name: `Date or deadline ${index + 1}`,
+          date: "See details",
+          detail
+        })),
+        uncertainInformation: [
+          "Accuracy is not independently verified. Check the linked sources before relying on eligibility or deadline details."
+        ],
         sources: sourceList
       },
       usage: {
         promptTokens: usage.promptTokenCount,
-        responseTokens: usage.candidatesTokenCount,
+        responseTokens: (usage.candidatesTokenCount || 0) + (usage.thoughtsTokenCount || 0),
         totalTokens: usage.totalTokenCount
       },
       executionMs,
-      scores: [
-        { metric: "accuracy", score: null, unit: "/100" },
-        { metric: "relevance", score: relevance, unit: "/100" },
-        { metric: "completeness", score: hasStructure ? 100 : 0, unit: "/100" },
-        { metric: "sourceQuality", score: sourceQuality, unit: "/100" },
-        { metric: "responseTime", score: executionMs, unit: "ms" },
-        { metric: "cost", score: null, unit: "$" },
-        { metric: "reliability", score: 100, unit: "/100" }
-      ],
-      overall: relevance === null ? null : Math.round((relevance + (hasStructure ? 100 : 0) + sourceQuality) / 3)
+      ...scores
     };
   } catch (error) {
+    const executionMs = Date.now() - start;
     return {
-      key: cfg.key,
-      name: cfg.name,
-      tagline: cfg.model,
+      key: config.key,
+      name: config.name,
+      tagline: config.model,
       status: "failed",
       error: String(error?.message || error).slice(0, 500),
-      model: cfg.model,
+      model: config.model,
       research: null,
       usage: null,
-      executionMs: Date.now() - start,
-      scores: [
-        { metric: "accuracy", score: null, unit: "/100" },
-        { metric: "relevance", score: null, unit: "/100" },
-        { metric: "completeness", score: null, unit: "/100" },
-        { metric: "sourceQuality", score: null, unit: "/100" },
-        { metric: "responseTime", score: Date.now() - start, unit: "ms" },
-        { metric: "cost", score: null, unit: "$" },
-        { metric: "reliability", score: 0, unit: "/100" }
-      ],
-      overall: null
+      executionMs,
+      ...buildScores({
+        cfg,
+        output: "",
+        executionMs,
+        sources: [],
+        usage: null,
+        status: "failed"
+      })
     };
   }
 }
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+
   try {
     if (!process.env.TAVILY_API_KEY || !process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: "Server configuration is incomplete. Check required API environment variables in Vercel." });
+      return res.status(500).json({
+        error: "Server configuration is incomplete. Check the required API environment variables in Vercel."
+      });
     }
+
     const body = req.body || {};
-    const question = body.researchQuestion || body.query || body.topic;
-    if (!question?.trim()) return res.status(400).json({ error: "Enter a research question." });
+    const question = text(body.researchQuestion || body.query || body.topic, 2000);
+    const category = text(body.opportunityCategory, 120);
+    const audience = text(body.targetAudience, 300);
+    const requirements = text(body.additionalRequirements, 3000);
+
+    if (!question) return res.status(400).json({ error: "Enter a research question." });
+
     const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
-    const search = await tvly.search(question, { maxResults: 5 });
+    const search = await tvly.search(
+      [question, category, audience].filter(Boolean).join(" "),
+      { maxResults: 5 }
+    );
+    const sources = Array.isArray(search.results) ? search.results : [];
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const agents = await Promise.all(CONFIGS.map((cfg) => runAgent(ai, cfg, question, search.results || [])));
+
+    const agents = await Promise.all(
+      CONFIGS.map((config) =>
+        runAgent(ai, config, question, category, audience, requirements, sources)
+      )
+    );
+
     const metricKeys = ["accuracy", "relevance", "completeness", "sourceQuality", "responseTime", "cost", "reliability"];
     const winners = {};
     for (const metric of metricKeys) {
-      const a = agents[0].scores.find((s) => s.metric === metric)?.score;
-      const b = agents[1].scores.find((s) => s.metric === metric)?.score;
-      if (a === null || b === null || a === undefined || b === undefined) winners[metric] = null;
-      else if (a === b) winners[metric] = "tie";
-      else winners[metric] = (metric === "responseTime" || metric === "cost") ? (a < b ? "alpha" : "beta") : (a > b ? "alpha" : "beta");
+      const a = agents[0].scores.find((score) => score.metric === metric)?.score;
+      const b = agents[1].scores.find((score) => score.metric === metric)?.score;
+      if (a === null || b === null || a === undefined || b === undefined) {
+        winners[metric] = null;
+      } else if (a === b) {
+        winners[metric] = "tie";
+      } else {
+        const lowerIsBetter = metric === "responseTime" || metric === "cost";
+        winners[metric] = lowerIsBetter
+          ? (a < b ? "alpha" : "beta")
+          : (a > b ? "alpha" : "beta");
+      }
     }
+
     return res.status(200).json({
       researchQuestion: question,
       completedAt: new Date().toISOString(),
-      rubric: "Live latency, deterministic question-term relevance, response structure, source metadata, and request success are measured. Accuracy and cost are unavailable because no independent fact-check or verified token pricing is configured.",
+      rubric: "Both models receive identical inputs and Tavily sources. Relevance is measured by research-term overlap; completeness by the presence of six required sections; source quality by titled HTTPS links; response time by measured request duration; reliability by request success. Cost is an estimate at Google's published Standard paid-tier token rates. Accuracy is unavailable without independent fact-checking.",
       agents,
       winners
     });
-  } catch (err) {
-    return res.status(500).json({ error: String(err?.message || err) });
+  } catch (error) {
+    const message = String(error?.message || error);
+    const status = /429|RESOURCE_EXHAUSTED|503|UNAVAILABLE|high demand|overloaded/i.test(message) ? 503 : 500;
+    return res.status(status).json({
+      error: status === 503
+        ? "The research or AI service is temporarily unavailable or rate-limited. Please retry shortly."
+        : message
+    });
   }
 }
