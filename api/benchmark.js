@@ -6,15 +6,11 @@ const CONFIGS = [
     key: "alpha",
     name: "Gemini 3.8 Flash",
     model: "gemini-3.8-flash",
-    inputPricePerMillion: 0.75,
-    outputPricePerMillion: 3.75
   },
   {
     key: "beta",
     name: "Gemini 3.5 Flash-Lite",
     model: "gemini-3.5-flash-lite",
-    inputPricePerMillion: 0.30,
-    outputPricePerMillion: 2.50
   }
 ];
 
@@ -76,14 +72,9 @@ function listItems(section) {
     .filter(Boolean);
 }
 
-function estimateCost(cfg, usage) {
-  const inputTokens = usage.promptTokenCount;
-  const outputTokens = (usage.candidatesTokenCount || 0) + (usage.thoughtsTokenCount || 0);
-  if (!Number.isFinite(inputTokens) || !Number.isFinite(outputTokens)) return null;
-  return Number((
-    inputTokens * cfg.inputPricePerMillion / 1_000_000 +
-    outputTokens * cfg.outputPricePerMillion / 1_000_000
-  ).toFixed(8));
+function estimateCost() {
+  // Do not guess model-specific prices; show cost as unavailable until verified.
+  return null;
 }
 
 function buildScores({ cfg, output, executionMs, sources, usage, status }) {
@@ -164,6 +155,7 @@ ${JSON.stringify(sources)}`;
       detail
     }));
     const eligibilityCriteria = listItems(extractSection(output, "Eligibility and Fit"));
+    const applicationSteps = listItems(extractSection(output, "Application Steps"));
     const deadlineItems = listItems(extractSection(output, "Deadlines and Dates"));
     const scores = buildScores({
       cfg,
@@ -182,9 +174,10 @@ ${JSON.stringify(sources)}`;
       model: config.model,
       research: {
         title: question,
-        executiveSummary: output,
+        executiveSummary: extractSection(output, "Executive Summary") || output,
         keyFindings,
         eligibilityCriteria,
+        applicationSteps,
         deadlines: deadlineItems.map((detail, index) => ({
           name: `Date or deadline ${index + 1}`,
           date: "See details",
@@ -279,7 +272,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       researchQuestion: question,
       completedAt: new Date().toISOString(),
-      rubric: "Both models receive identical inputs and Tavily sources. Relevance is measured by research-term overlap; completeness by the presence of six required sections; source quality by titled HTTPS links; response time by measured request duration; reliability by request success. Cost is an estimate at Google's published Standard paid-tier token rates. Accuracy is unavailable without independent fact-checking.",
+      rubric: "Both models receive identical inputs and Tavily sources. Relevance is a keyword-overlap heuristic; completeness checks for six required headings; source quality checks for titled HTTPS links; response time is measured request duration; reliability records request success. Cost is unavailable until current model-specific prices are verified. Accuracy requires independent fact-checking and is not scored.",
       agents,
       winners
     });
@@ -288,8 +281,10 @@ export default async function handler(req, res) {
     const status = /429|RESOURCE_EXHAUSTED|503|UNAVAILABLE|high demand|overloaded/i.test(message) ? 503 : 500;
     return res.status(status).json({
       error: status === 503
-        ? "The research or AI service is temporarily unavailable or rate-limited. Please retry shortly."
-        : message
+        ? "A connected research or Gemini model service is temporarily unavailable or rate-limited. Wait 30–60 seconds and retry. If it keeps failing, check the Vercel Function Logs for /api/benchmark."
+        : /TAVILY_API_KEY|GEMINI_API_KEY/.test(message)
+          ? "Server configuration is incomplete. In Vercel, add TAVILY_API_KEY and GEMINI_API_KEY under Project Settings → Environment Variables, then redeploy. Never put these keys in frontend code."
+          : `Live benchmark failed: ${message}. Open Vercel → Deployments → latest deployment → Functions/Logs and inspect the /api/benchmark invocation.`
     });
   }
 }
