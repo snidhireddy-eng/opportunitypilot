@@ -315,9 +315,10 @@ export default function Benchmark() {
           ))}
         </div>
         <p className="mt-6 text-base leading-[1.5] text-ink/80">
-          These fictional scores are for layout demonstration only. Real-run overall scores average the
-          available structural completeness, relevance, and source metadata checks. Response time and reliability
-          are shown separately; cost and factual accuracy remain unavailable until verified.
+          These fictional scores are for layout demonstration only. Live runs show individual checks instead of
+          an overall score because structural completeness, keyword overlap, and source metadata do not establish
+          factual quality. Response time and reliability are shown separately; cost and factual accuracy remain
+          unavailable until independently verified.
         </p>
       </Section>
 
