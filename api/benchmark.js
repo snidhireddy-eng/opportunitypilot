@@ -100,7 +100,7 @@ function buildScores({ cfg, output, executionMs, sources, usage, status }) {
       { metric: "relevance", score: relevance, unit: "/100" },
       { metric: "completeness", score: completeness, unit: "/100" },
       { metric: "sourceQuality", score: sourceQuality, unit: "/100" },
-      { metric: "responseTime", score: executionMs, unit: "ms" },
+      { metric: "responseTime", score: status === "completed" ? executionMs : null, unit: "ms" },
       { metric: "cost", score: cost, unit: "$" },
       { metric: "reliability", score: status === "completed" ? 100 : 0, unit: "/100" }
     ],
