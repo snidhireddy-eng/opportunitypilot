@@ -38,6 +38,12 @@ const LIVE_METRICS: Metric[] = [
     unit: '/100',
   },
   {
+    key: 'citationValidity',
+    label: 'Citation validity',
+    description: 'Share of inline source-title citations that exactly match supplied Tavily source titles; this checks traceability, not factual truth.',
+    unit: '/100',
+  },
+  {
     key: 'responseTime',
     label: 'Response time',
     description: 'Measured wall-clock time for each model request.',
