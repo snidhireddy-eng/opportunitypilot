@@ -9,13 +9,13 @@ export const SAMPLE_OVERVIEW: BriefingOverview = {
 
 export const SAMPLE_RESEARCH: ResearchContent = {
   companyBackground: [
-    'Harbor & Pine Analytics is a fictional company used only to demonstrate the layout of a briefing. A real briefing would describe the organisation’s products, size, recent news and history, each linked to a cited source.',
-    'Nothing on this page describes a real organisation. All names, facts and sources are placeholders.',
+    'Harbor & Pine Analytics is an illustrative example organisation used to demonstrate the layout of a briefing. A live briefing would describe the organisation’s products, size, recent news and history, each linked to a cited source.',
+    'This example does not describe a real organisation. Names, details and sources are placeholders.',
   ],
   keyInsights: [
     {
       title: 'Hiring focus (sample)',
-      detail: 'The fictional team is described as expanding its data platform group this year.',
+      detail: 'The example team is described as expanding its data platform group this year.',
     },
     {
       title: 'Culture signal (sample)',
