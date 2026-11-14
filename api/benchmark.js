@@ -172,7 +172,7 @@ ${JSON.stringify(sources)}`;
         model: config.model,
         contents: prompt
       }),
-      45000,
+      60000,
       `${config.name} request`
     );
     const executionMs = Date.now() - start;
