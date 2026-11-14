@@ -14,6 +14,8 @@ const CONFIGS = [
   }
 ];
 
+const MAX_FACT_CHECK_CLAIMS_PER_AGENT = 8;
+
 const REQUIRED_SECTIONS = [
   "Executive Summary",
   "Key Findings",
@@ -127,7 +129,7 @@ function extractFactClaims(research, agentKey) {
       seen.add(normalized);
       return true;
     })
-    .slice(0, 4);
+    .slice(0, MAX_FACT_CHECK_CLAIMS_PER_AGENT);
 
   return claims.map((claim, index) => ({
     id: `${agentKey}-claim-${index + 1}`,
@@ -523,7 +525,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       researchQuestion: question,
       completedAt: new Date().toISOString(),
-      rubric: "Both models receive identical inputs and initial Tavily sources. Relevance is a keyword-overlap heuristic; completeness checks six headings; source quality checks titled HTTPS links; citation validity checks source-title matching. Accuracy is an AI-assisted comparison of each extracted claim against its own separate Tavily reference search; supported/total checked claims is scored, so contradicted and unverified claims receive no support credit. This is not a guarantee of truth. Response time measures each model request; reliability records request success. Cost is unavailable until model-specific prices are verified.",
+      rubric: "Both models receive identical inputs and initial Tavily sources. Relevance is a keyword-overlap heuristic; completeness checks six headings; source quality checks titled HTTPS links; citation validity checks source-title matching. Accuracy is an AI-assisted comparison of each extracted claim against its own separate Tavily reference search; supported/total checked claims is scored, so contradicted and unverified claims receive no support credit. Up to eight claims per agent are sampled, so treat the score as a limited evidence sample, not a full-report accuracy rate. This is not a guarantee of truth. Response time measures each model request; reliability records request success. Cost is unavailable until model-specific prices are verified.",
       agents,
       winners
     });
