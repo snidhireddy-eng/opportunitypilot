@@ -284,7 +284,7 @@ export default function Benchmark() {
       </Section>
 
       <Section>
-        <Eyebrow number="02">DEMO AGENTS · FICTIONAL DATA</Eyebrow>
+        <Eyebrow number="02">ILLUSTRATIVE AGENTS</Eyebrow>
         <div className="mt-10 grid gap-4 md:grid-cols-2">
           {AGENTS.map((agent) => (
             <ScoreCard key={agent.key} agent={agent} showScore={false} />
@@ -321,10 +321,10 @@ export default function Benchmark() {
           ))}
         </div>
         <p className="mt-6 text-base leading-[1.5] text-ink/80">
-          These fictional scores are for layout demonstration only. Live runs show individual checks instead of
-          an overall score because structural completeness, keyword overlap, and source metadata do not establish
-          factual quality. Response time and reliability are shown separately; cost and factual accuracy remain
-          unavailable until independently verified.
+          These illustrative scores demonstrate the comparison layout; they are not results from a live run. Live runs show
+          individual checks instead of an overall score because structural completeness, keyword overlap, and source
+          metadata do not establish factual quality. Response time and reliability are shown separately; cost and
+          factual accuracy remain unavailable until independently verified.
         </p>
       </Section>
 
@@ -343,9 +343,9 @@ export default function Benchmark() {
 
       <Section>
         <div className="max-w-2xl border border-ink bg-note p-6 md:p-8">
-          <Eyebrow>SAMPLE DATA ONLY</Eyebrow>
+          <Eyebrow>ILLUSTRATIVE EXAMPLE</Eyebrow>
           <p className="mt-4 text-lg leading-[1.5] text-ink">
-            The comparison below is fictional sample data and is separate from any live benchmark run above.
+            The comparison above is an illustrative example, separate from the live benchmark results.
           </p>
         </div>
       </Section>
