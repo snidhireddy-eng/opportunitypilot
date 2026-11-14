@@ -97,6 +97,155 @@ function estimateCost() {
   return null;
 }
 
+function extractFactClaims(output, agentKey) {
+  const sections = ["Key Findings", "Eligibility and Fit", "Deadlines and Dates"];
+  const claims = sections
+    .flatMap((heading) => listItems(extractSection(output, heading)))
+    .map((claim) => claim.replace(/\\[Source:\\s*[^\\]]+\\]/gi, "").trim())
+    .filter((claim) => claim.length >= 25 && claim.length <= 500)
+    .slice(0, 4);
+
+  return claims.map((claim, index) => ({
+    id: `${agentKey}-claim-${index + 1}`,
+    agentKey,
+    claim
+  }));
+}
+
+function parseJsonResponse(value) {
+  const cleaned = value.trim().replace(/^\`\`\`(?:json)?\\s*/i, "").replace(/\\s*\`\`\`$/, "");
+  return JSON.parse(cleaned);
+}
+
+async function factCheckAgents(ai, tvly, agents) {
+  const claims = agents
+    .filter((agent) => agent.status === "completed" && agent.research)
+    .flatMap((agent) => extractFactClaims(
+      [
+        agent.research.executiveSummary,
+        ...(agent.research.keyFindings || []).map((finding) => finding.detail),
+        ...(agent.research.eligibilityCriteria || []),
+        ...(agent.research.deadlines || []).map((deadline) => deadline.detail)
+      ].join("\\n"),
+      agent.key
+    ));
+
+  if (!claims.length) {
+    return agents.map((agent) => ({
+      ...agent,
+      factCheck: { status: "unavailable", score: null, supported: 0, contradicted: 0, unverified: 0, claims: [], note: "No checkable factual claims were extracted." },
+      scores: agent.scores.map((item) => item.metric === "accuracy" ? { ...item, score: null } : item)
+    }));
+  }
+
+  const byAgent = await Promise.all(agents.map(async (agent) => {
+    const agentClaims = claims.filter((claim) => claim.agentKey === agent.key);
+    if (!agentClaims.length) return { agentKey: agent.key, sources: [] };
+    try {
+      const search = await withTimeout(
+        tvly.search(agentClaims.map((item) => item.claim).join(" ").slice(0, 1800), { maxResults: 5 }),
+        8000,
+        `Tavily fact-check research for ${agent.name}`
+      );
+      const sources = Array.isArray(search.results)
+        ? search.results.slice(0, 5).map((source) => ({
+            title: text(source.title, 300),
+            url: text(source.url, 1000),
+            content: text(source.content, 1800)
+          }))
+        : [];
+      return { agentKey: agent.key, sources };
+    } catch {
+      return { agentKey: agent.key, sources: [] };
+    }
+  }));
+
+  const evidence = byAgent.flatMap((item) =>
+    item.sources.map((source) => ({ agentKey: item.agentKey, ...source }))
+  );
+  if (!evidence.length) {
+    return agents.map((agent) => ({
+      ...agent,
+      factCheck: { status: "unavailable", score: null, supported: 0, contradicted: 0, unverified: claims.filter((claim) => claim.agentKey === agent.key).length, claims: [], note: "Independent reference search returned no evidence. Accuracy was not scored." },
+      scores: agent.scores.map((item) => item.metric === "accuracy" ? { ...item, score: null } : item)
+    }));
+  }
+
+  const judgePrompt = `You are an evidence-comparison evaluator. Evaluate each claim ONLY against the supplied independently retrieved reference evidence. Do not use prior knowledge. Return valid JSON only in this exact shape: {"results":[{"id":"claim id","status":"supported|contradicted|unverified","reason":"brief explanation","sourceTitles":["exact supplied title"]}]}.
+Rules:
+- supported = evidence directly supports the material claim.
+- contradicted = evidence directly conflicts with the material claim.
+- unverified = evidence is insufficient, ambiguous, or unrelated.
+- Do not treat absence of evidence as contradiction.
+- Do not infer facts beyond the supplied evidence.
+- Use only exact titles from the evidence list.
+Claims:
+${JSON.stringify(claims)}
+Independent reference evidence:
+${JSON.stringify(evidence)}`;
+
+  let judgments = [];
+  try {
+    const judged = await withTimeout(
+      ai.models.generateContent({
+        model: "gemini-3.5-flash-lite",
+        contents: judgePrompt
+      }),
+      45000,
+      "Independent fact-check evaluation"
+    );
+    const parsed = parseJsonResponse(judged.text || "");
+    judgments = Array.isArray(parsed.results) ? parsed.results : [];
+  } catch {
+    return agents.map((agent) => ({
+      ...agent,
+      factCheck: { status: "unavailable", score: null, supported: 0, contradicted: 0, unverified: claims.filter((claim) => claim.agentKey === agent.key).length, claims: [], note: "The evidence evaluator did not return a valid result. Accuracy was not scored." },
+      scores: agent.scores.map((item) => item.metric === "accuracy" ? { ...item, score: null } : item)
+    }));
+  }
+
+  return agents.map((agent) => {
+    const agentClaims = claims.filter((claim) => claim.agentKey === agent.key);
+    const checkedClaims = agentClaims.map((claim) => {
+      const judgment = judgments.find((item) => item.id === claim.id);
+      const status = ["supported", "contradicted", "unverified"].includes(judgment?.status)
+        ? judgment.status
+        : "unverified";
+      const allowedTitles = evidence
+        .filter((source) => source.agentKey === agent.key)
+        .map((source) => source.title);
+      return {
+        id: claim.id,
+        claim: claim.claim,
+        status,
+        reason: text(judgment?.reason, 400) || "No reliable evaluation was returned.",
+        sources: Array.isArray(judgment?.sourceTitles)
+          ? judgment.sourceTitles.filter((title) => allowedTitles.includes(title)).slice(0, 3)
+          : []
+      };
+    });
+    const supported = checkedClaims.filter((item) => item.status === "supported").length;
+    const contradicted = checkedClaims.filter((item) => item.status === "contradicted").length;
+    const unverified = checkedClaims.filter((item) => item.status === "unverified").length;
+    const determinate = supported + contradicted;
+    const score = determinate ? Math.round((supported / determinate) * 100) : null;
+    return {
+      ...agent,
+      factCheck: {
+        status: "completed",
+        score,
+        supported,
+        contradicted,
+        unverified,
+        claims: checkedClaims,
+        note: "AI-assisted evidence assessment, not a guarantee of truth. Unverified claims are excluded from the score; review linked evidence before relying on important facts."
+      },
+      scores: agent.scores.map((item) => item.metric === "accuracy" ? { ...item, score } : item)
+    };
+  });
+}
+
+
 function buildScores({ cfg, output, executionMs, sources, usage, status }) {
   const relevance = status === "completed" ? scoreRelevance(cfg.inputText, output) : null;
   const sectionCount = REQUIRED_SECTIONS.filter((heading) =>
@@ -338,6 +487,9 @@ export default async function handler(req, res) {
       };
     });
 
+    const factCheckedAgents = await factCheckAgents(ai, tvly, agents);
+    agents.splice(0, agents.length, ...factCheckedAgents);
+
     const metricKeys = ["accuracy", "relevance", "completeness", "sourceQuality", "citationValidity", "responseTime", "cost", "reliability"];
     const winners = {};
     for (const metric of metricKeys) {
@@ -358,7 +510,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       researchQuestion: question,
       completedAt: new Date().toISOString(),
-      rubric: "Both models receive identical inputs and Tavily sources. Relevance is a keyword-overlap heuristic; completeness checks for six required headings; source quality checks for titled HTTPS links; citation validity checks whether cited titles match supplied sources (not whether claims are true); response time is measured request duration; reliability records request success. Cost is unavailable until current model-specific prices are verified. Accuracy requires independent fact-checking and is not scored.",
+      rubric: "Both models receive identical inputs and initial Tavily sources. Relevance is a keyword-overlap heuristic; completeness checks six headings; source quality checks titled HTTPS links; citation validity checks source-title matching. Accuracy is an AI-assisted comparison of extracted claims against a separate Tavily reference search; supported/(supported + contradicted) is scored, while unverified claims are excluded. This is not a guarantee of truth. Response time measures each model request; reliability records request success. Cost is unavailable until model-specific prices are verified.",
       agents,
       winners
     });
