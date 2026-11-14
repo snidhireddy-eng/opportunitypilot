@@ -3,13 +3,13 @@
   "outputDirectory": "dist",
   "functions": {
     "api/benchmark.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/briefing.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/research/agent2.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     }
   },
   "rewrites": [
