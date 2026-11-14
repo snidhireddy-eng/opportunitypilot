@@ -172,7 +172,7 @@ ${JSON.stringify(sources)}`;
         model: config.model,
         contents: prompt
       }),
-      40000,
+      45000,
       `${config.name} request`
     );
     const executionMs = Date.now() - start;
@@ -285,10 +285,17 @@ export default async function handler(req, res) {
     try {
       const search = await withTimeout(
         tvly.search(searchQuery, { maxResults: 8 }),
-        10000,
+        8000,
         "Tavily research"
       );
-      sources = Array.isArray(search.results) ? search.results : [];
+      sources = Array.isArray(search.results)
+        ? search.results.slice(0, 6).map((source) => ({
+            title: text(source.title, 300),
+            url: text(source.url, 1000),
+            content: text(source.content, 1400),
+            published_date: source.published_date || null
+          }))
+        : [];
       if (!sources.length) researchWarning = "Tavily returned no sources. Agents must identify unsupported facts rather than invent evidence.";
     } catch (searchError) {
       researchWarning = `Tavily research unavailable: ${String(searchError?.message || searchError).slice(0, 240)}. Agents will run without live sources and must disclose evidence gaps.`;
