@@ -34,6 +34,13 @@ Background: ${background || "Not provided"}
 Goals: ${goals || "Not provided"}
 
 Use the live research sources below. Do not invent facts. Clearly mark missing information.
+
+Personalisation rules:
+- Treat the user's background and goals only as information they explicitly provided. Do not infer their skill level, years of experience, project history, achievements, frameworks, tools, certifications, teamwork, or professional experience.
+- If the background contains only a technology or language name (for example, "Java"), describe it only as a stated area of learning or familiarity. Do not present the user as an experienced Java developer or claim they have built production systems.
+- In Personalised Talking Points, separate confirmed user-provided facts from optional suggestions. Phrase unconfirmed items as possibilities the user could discuss only if they are true.
+- Put missing details needed for stronger personalisation under Information Gaps. Never fill those gaps with assumptions.
+
 ${JSON.stringify(search.results || [])}
 
 Use exactly these Markdown headings:
