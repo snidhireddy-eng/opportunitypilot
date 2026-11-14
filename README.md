@@ -1,143 +1,157 @@
-# OpportunityPilot
+# OpportunityPilot 
+### AI Opportunity Preparation & Benchmarking Platform
 
-**An Opportunity Research and AI Agent Benchmarking Platform**
+**Team:** Cognitive Engineering  
+**Hackathon:** Global AI Hackathon 2026
 
 ## About the Project
 
-OpportunityPilot is a React frontend with Vercel serverless API routes and a local Express development backend. It supports live meeting preparation, Tavily-powered opportunity research, and comparison of two Gemini models.
+OpportunityPilot is an AI-powered platform that combines opportunity research, personalised meeting preparation and AI model benchmarking.
 
-The project aims to bring meeting preparation and AI agent evaluation together in one platform.
+It helps users prepare for interviews, internships, professional meetings and other opportunities through research-backed information and AI-generated insights.
 
-## Problem Statement
+## Features
 
-Preparing for interviews, internships, networking sessions, and professional meetings requires collecting information and organising relevant questions and talking points.
+### 1. AI Pre-Meeting Briefing
 
-OpportunityPilot is being developed to simplify this preparation process through a structured platform.
+- Collects company, meeting and personal background details.
+- Uses Tavily for live web research.
+- Uses Google Gemini to generate a personalised briefing.
+- Provides company background, role and internship context, recent developments and key insights.
+- Generates suggested questions and personalised talking points.
+- Identifies information gaps.
+- Provides supporting research sources.
+- Includes a printable briefing option.
 
-## Current Features
+### 2. AI Model Benchmarking
 
-The following features are implemented in the current frontend:
+- Compares Gemini 3.6 Flash and Gemini 3.5 Flash-Lite.
+- Sends both models the same research question, requirements and initial Tavily sources.
+- Displays individual research outputs and performance metrics.
+- Evaluates relevance, completeness, source quality and citation validity.
+- Measures response time and request reliability.
+- Performs an AI-assisted evidence check using independently retrieved Tavily sources.
+- Reports individual model failures without fabricating results.
 
-- **Home Page:** Introduces OpportunityPilot, its purpose, workflow, and planned capabilities.
-- **Preparation Form:** Allows users to enter company or organisation details, meeting information, purpose, personal background, and additional goals.
-- **Form Validation:** Required fields are validated before submission.
-- **Preparation Summary:** Displays a frontend confirmation of the submitted preparation details.
-- **Navigation:** Provides navigation between the main project pages.
-- **Responsive Layout:** Uses a responsive frontend layout.
-- **Research Agent 2:** Uses the Google Gemini JavaScript SDK with Google Search grounding through the backend.
-- **Live Benchmarking:** The deployed Vercel endpoint sends the same task and Tavily sources to Gemini 3.6 Flash and Gemini 3.5 Flash-Lite, then compares their results with transparent checks. The separate local Express backend supports an optional external Agent 1 adapter.
+## Benchmarking Methodology
 
-## Pages
+The deployed benchmark evaluates:
 
-| Page | Current Status |
+| Metric | Evaluation |
 |---|---|
-| Home | Implemented |
-| Prepare | Frontend form implemented |
-| Meeting Briefing | Live Tavily + Gemini API route; requires server-side API keys |
-| Agent Benchmarking | Live comparison of Gemini 3.6 Flash and Gemini 3.5 Flash-Lite, with independent failure reporting |
-| About | Project information |
+| Evidence Support | AI-assisted assessment of sampled claims against independent reference searches |
+| Relevance | Keyword-overlap heuristic |
+| Completeness | Presence of six required report sections |
+| Source Quality | Titled HTTPS source links |
+| Citation Validity | Matching citations against supplied source titles |
+| Response Time | Model request execution time |
+| Reliability | Successful request completion |
+| API Cost | Unavailable until model-specific pricing is verified |
+
+The evidence-support evaluation checks up to eight sampled claims per model. It is not a guarantee of factual accuracy. Structural and metadata checks should not be interpreted as independent fact verification.
 
 ## Technology Stack
 
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-- React Router DOM
-- Lucide React
-- Node.js + Express
-- Google Gemini API (`@google/genai`)
+- **Frontend:** React 18, TypeScript, Vite
+- **Styling:** Tailwind CSS
+- **Navigation:** React Router DOM
+- **Backend:** Node.js, Express
+- **AI Integration:** Google Gemini API
+- **Research Integration:** Tavily API
+- **Deployment:** Vercel
 
-## Project Setup
+## Application Workflow
+
+1. Enter company, meeting and personal details.
+2. Submit the preparation form.
+3. Tavily retrieves relevant research.
+4. Gemini generates the personalised meeting briefing.
+5. View the briefing, supporting sources and information gaps.
+6. Open the benchmarking page.
+7. Submit a research question and evaluation requirements.
+8. Compare both Gemini models and their evaluation results.
+
+## Project Structure
+
+- `src/` – React frontend, pages, components and services.
+- `api/` – Vercel serverless API endpoints.
+- `backend/src/` – Local Express backend and services.
+- `backend/test/` – Backend tests.
+
+## Installation and Setup
 
 ### Prerequisites
-
 - Node.js
 - npm
 
-### Installation
+### Clone the repository
 
-1. Clone the repository:
+```bash
+git clone https://github.com/snidhireddy-eng/opportunitypilot.git
+cd opportunitypilot
+npm install
+```
 
-   ```bash
-   git clone https://github.com/snidhireddy-eng/opportunitypilot.git
-   ```
+### Configure environment variables
 
-2. Navigate into the project directory:
+Configure the following server-side variables for the deployed research and briefing endpoints:
 
-   ```bash
-   cd opportunitypilot
-   ```
+- `GEMINI_API_KEY`
+- `TAVILY_API_KEY`
 
-3. Install dependencies:
+Never expose API keys in frontend code or commit private environment files to GitHub.
 
-   ```bash
-   npm install
-   ```
+### Run the local development environment
 
-4. Create `.env` from `.env.example` and set `GEMINI_API_KEY`. Keep this file private; the key is only used by the backend.
+**Terminal 1 – Backend**
 
-5. Start the backend in one terminal:
+```bash
+npm run server:dev
+```
 
-   ```bash
-   npm run server:dev
-   ```
+**Terminal 2 – Frontend**
 
-6. Start the frontend in another terminal:
+```bash
+npm run dev
+```
 
-   ```bash
-   npm run dev
-   ```
+Open the local URL displayed by Vite.
 
-7. Open the local URL displayed in your terminal. Vite forwards `/api` requests to the backend on port 3001.
+## Available Commands
 
-### Available Commands
-
-| Command | Purpose |
+| Command | Description |
 |---|---|
-| `npm run dev` | Starts development server |
-| `npm run server:dev` | Starts the Express API with file watching |
-| `npm run server:start` | Starts the Express API |
+| `npm run dev` | Starts Vite development server |
+| `npm run server:dev` | Starts Express backend with file watching |
+| `npm run server:start` | Starts Express backend |
 | `npm run build` | Builds the frontend |
 | `npm run lint` | Runs ESLint |
-| `npm run typecheck` | Checks frontend and backend TypeScript types |
-| `npm test` | Runs structured-output and benchmark tests |
+| `npm run typecheck` | Checks TypeScript types |
+| `npm test` | Runs backend tests |
 | `npm run preview` | Previews production build |
 
-### API Endpoints
+## Current Limitations
 
-- `GET /api/health` reports whether the backend is running and Gemini is configured.
-- `POST /api/gemini/test` makes a simple Gemini request; an optional JSON body can include a `prompt`.
-- `POST /api/research/agent2` runs Research Agent 2. Required JSON fields: `researchQuestion`, `opportunityCategory`, and `targetAudience`; `additionalRequirements` is optional.
-- `POST /api/benchmark` sends the exact same request to both agents and returns results, scores, and winners. If Agent 1 or Gemini is not configured, its status and scores are reported as unavailable rather than fabricated.
-- The Benchmark page also has a **Run Agent 2 only** action for independent Agent 2 testing.
+- Evidence support is based on a limited sample of claims.
+- Evidence evaluation does not guarantee factual accuracy.
+- Citation checks establish source-title traceability, not whether claims are true.
+- API cost is unavailable until verified model pricing is configured.
+- Gemini and Tavily service availability may affect live results.
+- The local Express benchmarking architecture and deployed Vercel benchmarking implementation use different agent configurations.
 
-### Research Agent 1 Adapter Contract
+## Future Scope
 
-Research Agent 1 is not included in this repository. When Person 2 provides an HTTP endpoint, set `AGENT1_API_URL` (and optionally `AGENT1_API_KEY`) in `.env`. The adapter sends the same four input fields as Research Agent 2 and expects JSON with:
+- Expand the range of supported AI models.
+- Improve evidence verification.
+- Enhance benchmarking metrics.
+- Improve research coverage and personalisation.
 
-- `title`, `executiveSummary`
-- `keyFindings`: array of `{ "title", "detail" }`
-- `eligibilityCriteria`: string array
-- `deadlines`: array of `{ "name", "date", "detail" }`
-- `uncertainInformation`: string array
-- `sources`: array of `{ "title", "url" }`
-- Optional `model` and `usage` (`promptTokens`, `responseTokens`, `totalTokens`)
+## Project Links
 
-Execution time is measured by the adapter, not accepted from the agent. Source URLs must be HTTP(S). Coordinate this shape and the shared request fields with Person 2 before connecting their endpoint.
-
-For cost calculation, configure both `GEMINI_INPUT_USD_PER_MILLION` and `GEMINI_OUTPUT_USD_PER_MILLION`; Agent 1 has corresponding `AGENT1_...` variables. Leave prices unset to show cost as unavailable. The live evidence-support score checks up to eight selected claims per agent against separate Tavily reference searches using an AI evaluator. It is a limited sample, not a full-report accuracy guarantee. The live completeness, relevance, and source-quality scores are explicitly limited to structural/query-term/metadata checks and are not fact-checks.
-
-## Current Development Status
-
-The deployed Vercel app includes a live meeting-briefing endpoint (`api/briefing.js`), a standalone research endpoint (`api/research/agent2.js`), and a two-model benchmark endpoint (`api/benchmark.js`). These require server-side `TAVILY_API_KEY` and `GEMINI_API_KEY` values. Gemini provider availability can vary; a 503 response is a temporary provider failure, not a successful model result. The benchmark reports individual agent failures without discarding the other result. Factual accuracy is not independently scored, citation validity checks source-title traceability rather than truth, and API cost remains unavailable until verified model pricing is configured. Illustrative example content is clearly separated from live results.
-
-## Project Goal
-
-The goal is to develop OpportunityPilot into a platform that can generate research-backed meeting preparation briefings and evaluate AI agents using measurable performance criteria.
+- **GitHub Repository:** https://github.com/snidhireddy-eng/opportunitypilot
+- **Live Application:** https://opportunitypilot.vercel.app
 
 ---
 
-**Project:** OpportunityPilot  
-**Status:** Deployed app with live Tavily research and Gemini-powered briefing and benchmarking APIs
-**Hackathon:** Global AI Hackathon 2026
+**OpportunityPilot | Built by Team Cognitive Engineering**  
+Global AI Hackathon 2026
