@@ -119,6 +119,9 @@ function extractFactClaims(research, agentKey) {
       // Markdown table headers, separators and rows are not clean atomic claims.
       if (claim.includes("|") || /^[-: ]+$/.test(claim)) return false;
       if (/^(key findings|eligibility|deadlines|date or deadline|source links)\b/i.test(claim)) return false;
+      // Skip report narration and methodology statements; they are not opportunity facts.
+      if (/^(this (?:research )?report|the findings|this research|based on (?:the |available )?(?:provided |live )?sources|as of .*?,? (?:this report|the report))/i.test(claim)) return false;
+      if (/\b(?:this report evaluates|the findings outline|opportunities are categorized below|this research report outlines)\b/i.test(claim)) return false;
       const normalized = claim.toLowerCase();
       if (seen.has(normalized)) return false;
       seen.add(normalized);
