@@ -166,7 +166,9 @@ Rules:
 - unverified = evidence is insufficient, ambiguous, or unrelated.
 - Do not treat absence of evidence as contradiction.
 - Do not infer facts beyond the supplied evidence.
-- Use only exact titles from the evidence list.
+- For each claim, use ONLY evidence entries whose claimId exactly matches that claim's id.
+- Do not use evidence retrieved for another claim, even if it seems relevant.
+- Use only exact titles from that claim's matching evidence entries.
 Claims:
 ${JSON.stringify(claims)}
 Independent reference evidence:
@@ -200,7 +202,7 @@ ${JSON.stringify(evidence)}`;
         ? judgment.status
         : "unverified";
       const allowedTitles = evidence
-        .filter((source) => source.agentKey === agent.key)
+        .filter((source) => source.claimId === claim.id)
         .map((source) => source.title);
       return {
         id: claim.id,
