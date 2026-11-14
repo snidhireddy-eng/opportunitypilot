@@ -61,13 +61,6 @@ export default function Footer() {
           </div>
         </div>
       </div>
-      <div className="border-t border-ink/20">
-        <div className="page-container py-6">
-          <p className="font-mono text-xs uppercase tracking-[0.12em] text-ink/65">
-            Hackathon prototype. Some content is sample data.
-          </p>
-        </div>
-      </div>
     </footer>
   );
 }
