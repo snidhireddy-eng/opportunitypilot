@@ -98,13 +98,32 @@ function estimateCost() {
 }
 
 function extractFactClaims(research, agentKey) {
-  const claims = [
+  const summarySentences = (research.executiveSummary || "")
+    .split(/(?<=[.!?])\\s+/)
+    .filter((sentence) => sentence.length >= 35);
+  const candidates = [
+    ...summarySentences,
     ...(research.keyFindings || []).map((finding) => finding.detail),
     ...(research.eligibilityCriteria || []),
     ...(research.deadlines || []).map((deadline) => deadline.detail)
-  ]
-    .map((claim) => claim.replace(/\[Source:\s*[^\]]+\]/gi, "").trim())
-    .filter((claim) => claim.length >= 25 && claim.length <= 500)
+  ];
+  const seen = new Set();
+  const claims = candidates
+    .map((claim) => claim
+      .replace(/\\[Source:\\s*[^\\]]+\\]/gi, "")
+      .replace(/^\\s*(?:[-*•]|\\d+[.)])\\s*/, "")
+      .replace(/\\*{1,2}/g, "")
+      .trim())
+    .filter((claim) => {
+      if (claim.length < 40 || claim.length > 500) return false;
+      // Markdown table headers, separators and rows are not clean atomic claims.
+      if (claim.includes("|") || /^[-: ]+$/.test(claim)) return false;
+      if (/^(key findings|eligibility|deadlines|date or deadline|source links)\\b/i.test(claim)) return false;
+      const normalized = claim.toLowerCase();
+      if (seen.has(normalized)) return false;
+      seen.add(normalized);
+      return true;
+    })
     .slice(0, 4);
 
   return claims.map((claim, index) => ({
