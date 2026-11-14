@@ -25,7 +25,7 @@ The following features are implemented in the current frontend:
 - **Navigation:** Provides navigation between the main project pages.
 - **Responsive Layout:** Uses a responsive frontend layout.
 - **Research Agent 2:** Uses the Google Gemini JavaScript SDK with Google Search grounding through the backend.
-- **Live Benchmarking:** The deployed Vercel endpoint sends the same task and Tavily sources to Gemini 3.8 Flash and Gemini 3.5 Flash-Lite, then compares their results with transparent checks. The separate local Express backend supports an optional external Agent 1 adapter.
+- **Live Benchmarking:** The deployed Vercel endpoint sends the same task and Tavily sources to Gemini 3.6 Flash and Gemini 3.5 Flash-Lite, then compares their results with transparent checks. The separate local Express backend supports an optional external Agent 1 adapter.
 
 ## Pages
 
@@ -34,7 +34,7 @@ The following features are implemented in the current frontend:
 | Home | Implemented |
 | Prepare | Frontend form implemented |
 | Meeting Briefing | Live Tavily + Gemini API route; requires server-side API keys |
-| Agent Benchmarking | Live comparison of Gemini 3.8 Flash and Gemini 3.5 Flash-Lite, with independent failure reporting |
+| Agent Benchmarking | Live comparison of Gemini 3.6 Flash and Gemini 3.5 Flash-Lite, with independent failure reporting |
 | About | Project information |
 
 ## Technology Stack
@@ -126,7 +126,7 @@ Research Agent 1 is not included in this repository. When Person 2 provides an H
 
 Execution time is measured by the adapter, not accepted from the agent. Source URLs must be HTTP(S). Coordinate this shape and the shared request fields with Person 2 before connecting their endpoint.
 
-For cost calculation, configure both `GEMINI_INPUT_USD_PER_MILLION` and `GEMINI_OUTPUT_USD_PER_MILLION`; Agent 1 has corresponding `AGENT1_...` variables. Leave prices unset to show cost as unavailable. Accuracy is also unavailable until independent reference evidence is supplied. The live completeness, relevance, and source-quality scores are explicitly limited to structural/query-term/metadata checks and are not fact-checks.
+For cost calculation, configure both `GEMINI_INPUT_USD_PER_MILLION` and `GEMINI_OUTPUT_USD_PER_MILLION`; Agent 1 has corresponding `AGENT1_...` variables. Leave prices unset to show cost as unavailable. The live evidence-support score checks up to eight selected claims per agent against separate Tavily reference searches using an AI evaluator. It is a limited sample, not a full-report accuracy guarantee. The live completeness, relevance, and source-quality scores are explicitly limited to structural/query-term/metadata checks and are not fact-checks.
 
 ## Current Development Status
 
