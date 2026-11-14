@@ -31,6 +31,14 @@ const STOP_WORDS = new Set([
   "which", "with", "would", "your"
 ]);
 
+function withTimeout(promise, milliseconds, label) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(milliseconds / 1000)} seconds.`)), milliseconds);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
 function text(value, maxLength = 3000) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
@@ -159,10 +167,14 @@ ${JSON.stringify(sources)}`;
   const cfg = { ...config, inputText: [question, category, audience, requirements].filter(Boolean).join(" ") };
 
   try {
-    const response = await ai.models.generateContent({
-      model: config.model,
-      contents: prompt
-    });
+    const response = await withTimeout(
+      ai.models.generateContent({
+        model: config.model,
+        contents: prompt
+      }),
+      40000,
+      `${config.name} request`
+    );
     const executionMs = Date.now() - start;
     const output = response.text || "";
     if (!output.trim()) throw new Error("The model returned an empty response.");
@@ -268,8 +280,19 @@ export default async function handler(req, res) {
       "upcoming current opportunities registration open deadlines",
       searchDate.slice(0, 4)
     ].filter(Boolean).join(" ");
-    const search = await tvly.search(searchQuery, { maxResults: 8 });
-    const sources = Array.isArray(search.results) ? search.results : [];
+    let sources = [];
+    let researchWarning = null;
+    try {
+      const search = await withTimeout(
+        tvly.search(searchQuery, { maxResults: 8 }),
+        10000,
+        "Tavily research"
+      );
+      sources = Array.isArray(search.results) ? search.results : [];
+      if (!sources.length) researchWarning = "Tavily returned no sources. Agents must identify unsupported facts rather than invent evidence.";
+    } catch (searchError) {
+      researchWarning = `Tavily research unavailable: ${String(searchError?.message || searchError).slice(0, 240)}. Agents will run without live sources and must disclose evidence gaps.`;
+    }
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     const settledAgents = await Promise.allSettled(
