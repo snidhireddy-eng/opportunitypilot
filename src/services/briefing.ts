@@ -167,9 +167,11 @@ export function buildLiveBriefing(
 
   const markdown = response.briefing;
 
+  const companySection = getSection(markdown, ['company background']);
+  const roleContext = getSection(markdown, ['role and internship context']);
   const executiveSummary = getSection(markdown, ['executive summary']);
   const recentDevelopments = getSection(markdown, ['recent developments']);
-  const insights = getSection(markdown, ['important insights', 'key insights']);
+  const insights = getSection(markdown, ['key insights', 'important insights']);
   const questions = getSection(markdown, ['suggested questions']);
   const talkingPoints = getSection(markdown, [
     'personalised talking points',
@@ -178,7 +180,9 @@ export function buildLiveBriefing(
   const informationGaps = getSection(markdown, ['information gaps']);
 
   const companyBackground = [
-    executiveSummary,
+    ...splitItems(companySection),
+    ...splitItems(roleContext),
+    ...splitItems(executiveSummary),
     ...splitItems(recentDevelopments),
   ].filter(Boolean);
 
