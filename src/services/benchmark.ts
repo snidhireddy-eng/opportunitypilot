@@ -47,12 +47,22 @@ export async function runBenchmark(
     throw new Error('Could not reach the benchmark service. Confirm the backend is running and try again.');
   }
 
-  const payload: unknown = await response.json().catch(() => null);
+  const responseText = await response.text();
+  let payload: unknown = null;
+  try {
+    payload = JSON.parse(responseText);
+  } catch {
+    const detail = responseText.replace(/\\s+/g, ' ').trim().slice(0, 240);
+    throw new Error(
+      `Benchmark API returned a non-JSON response (HTTP ${response.status}). ${detail || 'The server returned an empty response.'}`
+    );
+  }
+
   if (!response.ok) {
     const message =
       payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
         ? payload.error
-        : 'The benchmark could not be completed.';
+        : `The benchmark request failed (HTTP ${response.status}).`;
     throw new Error(message);
   }
 
