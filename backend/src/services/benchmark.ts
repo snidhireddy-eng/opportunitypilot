@@ -189,6 +189,7 @@ function findWinners(agents: BenchmarkAgentRun[]): BenchmarkRunResult['winners']
     completeness: null,
     relevance: null,
     sourceQuality: null,
+    citationValidity: null,
     responseTime: null,
     cost: null,
     reliability: null,
