@@ -112,7 +112,7 @@ function extractFactClaims(research, agentKey) {
     .map((claim) => claim
       .replace(/\[Source:\s*[^\]]+\]/gi, "")
       .replace(/^\s*(?:[-*•]|\d+[.)])\s*/, "")
-      .replace(/\\*{1,2}/g, "")
+      .replace(/\*{1,2}/g, "")
       .trim())
     .filter((claim) => {
       if (claim.length < 40 || claim.length > 500) return false;
