@@ -110,8 +110,10 @@ Use only the relevant, quality-filtered research sources below. Do not use outsi
 Personalisation rules:
 - Treat the user's background and goals only as information they explicitly provided. Do not infer their skill level, years of experience, project history, achievements, frameworks, tools, certifications, teamwork, or professional experience.
 - If the background contains only a technology or language name (for example, "Java"), describe it only as a stated area of learning or familiarity. Do not present the user as an experienced Java developer or claim they have built production systems.
-- In Personalised Talking Points, separate confirmed user-provided facts from optional suggestions. Phrase unconfirmed items as possibilities the user could discuss only if they are true.
+- In Personalised Talking Points, output 2–5 concise Markdown bullet points only. Each bullet must have a non-empty label and detail in the same line, using the format "- Confirmed background: ...", "- Optional (only if true): ...", or "- Project detail to prepare: ...". Do not create standalone subheadings, numbered "Talking point" labels, empty labels, or repeat the same fact across multiple bullets.
 - Put missing details needed for stronger personalisation under Information Gaps. Never fill those gaps with assumptions.
+- Tailor Suggested Questions to the stated meeting contact. If the contact is HR/recruiting, prioritise eligibility for the named internship and academic year, application windows, hiring stages, assessment format, location, and how to apply. Do not ask HR to explain detailed engineering architecture or technical evaluation rubrics; label those as questions for an engineering interviewer if useful.
+- Do not imply that a first-year student is eligible for a specific Google internship unless an included official source explicitly confirms the eligibility criteria. If eligibility is not confirmed, make checking it the first recommended action and state the gap clearly.
 
 ${JSON.stringify(relevantResults)}
 
