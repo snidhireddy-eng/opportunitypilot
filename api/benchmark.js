@@ -4,8 +4,8 @@ import { GoogleGenAI } from "@google/genai";
 const CONFIGS = [
   {
     key: "alpha",
-    name: "Gemini 3.8 Flash",
-    model: "gemini-3.8-flash",
+    name: "Gemini 3.6 Flash",
+    model: "gemini-3.6-flash",
   },
   {
     key: "beta",
