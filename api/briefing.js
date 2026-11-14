@@ -4,6 +4,69 @@ import { GoogleGenAI } from "@google/genai";
 // Prefer the model already confirmed to work; use Gemini 3.8 only as a fallback.
 const MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash"];
 
+const OFFICIAL_DOMAINS_BY_COMPANY = {
+  tcs: ["tcs.com", "tata.com"],
+};
+
+const TRUSTED_NEWS_DOMAINS = [
+  "reuters.com",
+  "bloomberg.com",
+  "ft.com",
+  "wsj.com",
+  "bbc.com",
+  "cnbc.com",
+  "economictimes.indiatimes.com",
+  "m.economictimes.com",
+  "business-standard.com",
+  "livemint.com",
+  "thehindu.com",
+  "indianexpress.com",
+];
+
+function normalizeText(value = "") {
+  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function getCompanySearchName(company = "") {
+  const normalized = normalizeText(company);
+  return normalized === "tcs" ? "Tata Consultancy Services (TCS)" : company;
+}
+
+function isAllowedDomain(hostname, domains = []) {
+  return domains.some((domain) => hostname === domain || hostname.endsWith("." + domain));
+}
+
+function selectRelevantSources(results, company) {
+  const normalizedCompany = normalizeText(company);
+  const isTcs = normalizedCompany === "tcs" || normalizedCompany === "tata consultancy services";
+  const officialDomains = isTcs ? OFFICIAL_DOMAINS_BY_COMPANY.tcs : [];
+  const companyPhrase = isTcs ? "tata consultancy services" : normalizedCompany;
+  const companyTokens = companyPhrase.split(" ").filter((token) => token.length > 2);
+  const ranked = (results || []).flatMap((result) => {
+    try {
+      const hostname = new URL(result.url).hostname.toLowerCase().replace(/^www\./, "");
+      const text = normalizeText([result.title || "", result.content || "", hostname].join(" "));
+      const matchesCompany = isTcs
+        ? text.includes("tata consultancy services") || isAllowedDomain(hostname, officialDomains)
+        : text.includes(companyPhrase) || (companyTokens.length > 1 && companyTokens.every((token) => text.includes(token)));
+      const isOfficial = isAllowedDomain(hostname, officialDomains);
+      const isTrustedNews = isAllowedDomain(hostname, TRUSTED_NEWS_DOMAINS);
+      if (!matchesCompany || (!isOfficial && !isTrustedNews)) return [];
+      return [{
+        ...result,
+        sourceType: isOfficial ? "Official company source" : "Established news source",
+        sourceRank: isOfficial ? 2 : 1,
+      }];
+    } catch {
+      return [];
+    }
+  });
+
+  return ranked
+    .sort((a, b) => b.sourceRank - a.sourceRank || (Number(b.score) || 0) - (Number(a.score) || 0))
+    .slice(0, 6);
+}
+
 function isTemporary(error) {
   const message = String(error?.message || error);
   return /503|UNAVAILABLE|429|RESOURCE_EXHAUSTED|high demand|overloaded/i.test(message);
@@ -21,8 +84,10 @@ export default async function handler(req, res) {
     }
 
     const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
-    const search = await tvly.search(`${company || ""} ${personName || ""} ${personRole || ""} company overview recent news`, { maxResults: 5 });
-    const sources = (search.results || []).map((r) => ({ title: r.title || null, url: r.url }));
+    const searchCompany = getCompanySearchName(company || "");
+    const search = await tvly.search(`${searchCompany} ${personName || ""} ${personRole || ""} company official announcements recent news`, { maxResults: 10 });
+    const relevantResults = selectRelevantSources(search.results, company || "");
+    const sources = relevantResults.map((r) => ({ title: r.title || null, url: r.url, sourceType: r.sourceType, publishedDate: r.published_date || null }));
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const prompt = `Create a practical, fact-grounded meeting briefing for:
 Company: ${company || "Not provided"}
@@ -33,7 +98,7 @@ Purpose: ${purpose || "Not provided"}
 Background: ${background || "Not provided"}
 Goals: ${goals || "Not provided"}
 
-Use the live research sources below. Do not invent facts. Clearly mark missing information.
+Use only the relevant, quality-filtered research sources below. Do not use outside assumptions to fill gaps. Every company-specific factual claim in Executive Summary, Recent Developments, and Important Insights must be supported by one of these sources; cite it inline using its exact title in the format [Source: exact source title]. If no source supports a claim, omit it or clearly label it as unverified. Prefer official company sources for company announcements and established news publishers for independent reporting. Do not cite a source for a claim it does not support. If the filtered source list is empty, say that reliable relevant sources could not be found and do not invent recent developments.
 
 Personalisation rules:
 - Treat the user's background and goals only as information they explicitly provided. Do not infer their skill level, years of experience, project history, achievements, frameworks, tools, certifications, teamwork, or professional experience.
@@ -41,7 +106,7 @@ Personalisation rules:
 - In Personalised Talking Points, separate confirmed user-provided facts from optional suggestions. Phrase unconfirmed items as possibilities the user could discuss only if they are true.
 - Put missing details needed for stronger personalisation under Information Gaps. Never fill those gaps with assumptions.
 
-${JSON.stringify(search.results || [])}
+${JSON.stringify(relevantResults)}
 
 Use exactly these Markdown headings:
 ## Executive Summary
