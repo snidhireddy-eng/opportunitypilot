@@ -73,11 +73,24 @@ export default function Briefing() {
           signal: controller.signal,
         });
 
-        const data = await response.json();
+        const responseText = await response.text();
+        let data: (Partial<MeetingBriefingResponse> & { error?: string }) | null = null;
+
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          const detail = responseText
+            .replace(/\\s+/g, ' ')
+            .trim()
+            .slice(0, 240);
+          throw new Error(
+            `Briefing API returned a non-JSON response (HTTP ${response.status}). ${detail || 'The server returned an empty response.'}`
+          );
+        }
 
         if (!response.ok) {
           throw new Error(
-            data.error || 'Unable to generate your meeting briefing.'
+            data?.error || `Unable to generate your meeting briefing (HTTP ${response.status}).`
           );
         }
 
