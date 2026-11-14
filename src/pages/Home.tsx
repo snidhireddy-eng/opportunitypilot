@@ -93,14 +93,6 @@ export default function Home() {
         </div>
       </Section>
 
-      <Section>
-        <div className="max-w-2xl border border-ink/20 bg-note p-6 md:p-8">
-          <Eyebrow>PROTOTYPE</Eyebrow>
-          <p className="mt-4 text-lg leading-[1.5] text-ink">
-            This version runs on sample data. Live research is not connected yet.
-          </p>
-        </div>
-      </Section>
     </>
   );
 }
