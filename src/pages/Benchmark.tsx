@@ -264,6 +264,49 @@ export default function Benchmark() {
               </div>
             </section>
 
+            <section aria-labelledby="live-fact-check">
+              <h2 id="live-fact-check" className="text-2xl md:text-3xl">Independent evidence check</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-[1.5] text-ink/75">
+                Selected factual claims are checked against a separate Tavily search. An AI evaluator classifies each claim using only the retrieved evidence. This is an evidence assessment, not a guarantee of truth.
+              </p>
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                {run.agents.map((agent) => (
+                  <article key={agent.key} className="border border-ink/20 p-5">
+                    <h3 className="text-xl">{agent.name}</h3>
+                    {agent.factCheck ? (
+                      <>
+                        <p className="mt-2 font-mono text-sm">
+                          Accuracy: {agent.factCheck.score === null ? 'Not scored' : `${agent.factCheck.score}/100`}
+                        </p>
+                        <p className="mt-1 text-sm text-ink/75">
+                          Supported: {agent.factCheck.supported} · Contradicted: {agent.factCheck.contradicted} · Unverified: {agent.factCheck.unverified}
+                        </p>
+                        <p className="mt-3 text-xs leading-[1.5] text-ink/65">{agent.factCheck.note}</p>
+                        {agent.factCheck.claims.length > 0 && (
+                          <ul className="mt-4 space-y-4">
+                            {agent.factCheck.claims.map((claim) => (
+                              <li key={claim.id} className="border-t border-ink/15 pt-3">
+                                <p className="text-sm font-bold">{claim.claim}</p>
+                                <p className="mt-1 text-xs font-mono uppercase tracking-wide">
+                                  {claim.status}
+                                </p>
+                                <p className="mt-1 text-sm text-ink/75">{claim.reason}</p>
+                                {claim.sources.length > 0 && (
+                                  <p className="mt-1 text-xs text-ink/65">Evidence: {claim.sources.join('; ')}</p>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </>
+                    ) : (
+                      <p className="mt-2 text-sm text-ink/70">Fact-check result unavailable for this run.</p>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </section>
+
             <section aria-labelledby="live-comparison">
               <h2 id="live-comparison" className="text-2xl md:text-3xl">Live metric comparison</h2>
               <div className="mt-6">
