@@ -78,8 +78,8 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
   },
   {
     number: '02',
-    title: 'Independent research',
-    body: 'Each agent runs its own research and reasoning without seeing the other\u2019s work.',
+    title: 'Same research context',
+    body: 'Both models receive the same research question, requirements and Tavily sources. Each generates its own response independently; neither sees the other\u2019s output.',
   },
   {
     number: '03',
