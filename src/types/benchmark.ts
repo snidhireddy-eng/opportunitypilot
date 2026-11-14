@@ -35,8 +35,27 @@ export type Agent = {
 
 export type BenchmarkAgentStatus = 'completed' | 'not_configured' | 'failed';
 
+export type FactCheckClaim = {
+  id: string;
+  claim: string;
+  status: 'supported' | 'contradicted' | 'unverified';
+  reason: string;
+  sources: string[];
+};
+
+export type AgentFactCheck = {
+  status: 'completed' | 'unavailable';
+  score: number | null;
+  supported: number;
+  contradicted: number;
+  unverified: number;
+  claims: FactCheckClaim[];
+  note: string;
+};
+
 export type BenchmarkAgentRun = Agent & {
   status: BenchmarkAgentStatus;
+  factCheck?: AgentFactCheck;
   error?: string;
   research: ResearchOutput | null;
   model: string | null;
