@@ -15,8 +15,8 @@ import { AGENTS, HOW_IT_WORKS_STEPS, METRICS } from '@/data/sampleBenchmark';
 const LIVE_METRICS: Metric[] = [
   {
     key: 'accuracy',
-    label: 'Accuracy',
-    description: 'Unavailable until results can be checked against independent reference evidence.',
+    label: 'Evidence support',
+    description: 'Evidence-support score: supported claims divided by all checked claims. Contradicted and unverified claims receive no support credit; this AI-assisted score is not proof of truth.',
     unit: '/100',
   },
   {
@@ -276,7 +276,7 @@ export default function Benchmark() {
                     {agent.factCheck ? (
                       <>
                         <p className="mt-2 font-mono text-sm">
-                          Accuracy: {agent.factCheck.score === null ? 'Not scored' : `${agent.factCheck.score}/100`}
+                          Evidence support: {agent.factCheck.score === null ? 'Not scored' : `${agent.factCheck.score}/100`}
                         </p>
                         <p className="mt-1 text-sm text-ink/75">
                           Supported: {agent.factCheck.supported} · Contradicted: {agent.factCheck.contradicted} · Unverified: {agent.factCheck.unverified}
