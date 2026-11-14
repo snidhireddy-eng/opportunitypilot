@@ -47,7 +47,7 @@ export const SAMPLE_RESEARCH: ResearchContent = {
     },
   ],
   sources: [
-    { title: 'Sample company profile (fictional)', publisher: 'Sample data' },
-    { title: 'Sample news item (fictional)', publisher: 'Sample data' },
+    { title: 'Sample company profile (illustrative)', publisher: 'Illustrative example' },
+    { title: 'Sample news item (illustrative)', publisher: 'Illustrative example' },
   ],
 };
