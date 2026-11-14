@@ -6,6 +6,7 @@ const MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash"];
 
 const OFFICIAL_DOMAINS_BY_COMPANY = {
   tcs: ["tcs.com", "tata.com"],
+  google: ["google.com", "blog.google", "about.google", "abc.xyz"],
 };
 
 const TRUSTED_NEWS_DOMAINS = [
@@ -39,7 +40,8 @@ function isAllowedDomain(hostname, domains = []) {
 function selectRelevantSources(results, company) {
   const normalizedCompany = normalizeText(company);
   const isTcs = normalizedCompany === "tcs" || normalizedCompany === "tata consultancy services";
-  const officialDomains = isTcs ? OFFICIAL_DOMAINS_BY_COMPANY.tcs : [];
+  const isGoogle = normalizedCompany === "google" || normalizedCompany === "google llc";
+  const officialDomains = isTcs ? OFFICIAL_DOMAINS_BY_COMPANY.tcs : isGoogle ? OFFICIAL_DOMAINS_BY_COMPANY.google : [];
   const companyPhrase = isTcs ? "tata consultancy services" : normalizedCompany;
   const companyTokens = companyPhrase.split(" ").filter((token) => token.length > 2);
   const ranked = (results || []).flatMap((result) => {
@@ -48,7 +50,9 @@ function selectRelevantSources(results, company) {
       const text = normalizeText([result.title || "", result.content || "", hostname].join(" "));
       const matchesCompany = isTcs
         ? text.includes("tata consultancy services") || isAllowedDomain(hostname, officialDomains)
-        : text.includes(companyPhrase) || (companyTokens.length > 1 && companyTokens.every((token) => text.includes(token)));
+        : isGoogle
+          ? text.includes("google") || isAllowedDomain(hostname, officialDomains)
+          : text.includes(companyPhrase) || (companyTokens.length > 1 && companyTokens.every((token) => text.includes(token)));
       const isOfficial = isAllowedDomain(hostname, officialDomains);
       const isTrustedNews = isAllowedDomain(hostname, TRUSTED_NEWS_DOMAINS);
       if (!matchesCompany || (!isOfficial && !isTrustedNews)) return [];
@@ -85,7 +89,10 @@ export default async function handler(req, res) {
 
     const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
     const searchCompany = getCompanySearchName(company || "");
-    const search = await tvly.search(`${searchCompany} ${personName || ""} ${personRole || ""} company official announcements recent news`, { maxResults: 10 });
+    const interviewContext = /intern|interview|sde|software engineer|job/i.test(`${meetingType || ""} ${purpose || ""} ${personRole || ""}`)
+      ? "early careers software engineering internship hiring process interview preparation official careers"
+      : "company official announcements recent news";
+    const search = await tvly.search(`${searchCompany} ${personName || ""} ${personRole || ""} ${interviewContext}`, { maxResults: 10 });
     const relevantResults = selectRelevantSources(search.results, company || "");
     const sources = relevantResults.map((r) => ({ title: r.title || null, url: r.url, sourceType: r.sourceType, publishedDate: r.published_date || null }));
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
