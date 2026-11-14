@@ -71,6 +71,14 @@ function selectRelevantSources(results, company) {
     .slice(0, 6);
 }
 
+function withTimeout(promise, milliseconds, label) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(milliseconds / 1000)} seconds.`)), milliseconds);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
 function isTemporary(error) {
   const message = String(error?.message || error);
   return /503|UNAVAILABLE|429|RESOURCE_EXHAUSTED|high demand|overloaded/i.test(message);
@@ -89,38 +97,73 @@ export default async function handler(req, res) {
 
     const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
     const searchCompany = getCompanySearchName(company || "");
-    const interviewContext = /intern|interview|sde|software engineer|job/i.test(`${meetingType || ""} ${purpose || ""} ${personRole || ""}`)
-      ? "early careers software engineering internship hiring process interview preparation official careers"
-      : "company official announcements recent news";
-    const search = await tvly.search(`${searchCompany} ${personName || ""} ${personRole || ""} ${interviewContext}`, { maxResults: 10 });
-    const relevantResults = selectRelevantSources(search.results, company || "");
-    const sources = relevantResults.map((r) => ({ title: r.title || null, url: r.url, sourceType: r.sourceType, publishedDate: r.published_date || null }));
+    const isInterview = /intern|interview|sde|software engineer|job/i.test(`${meetingType || ""} ${purpose || ""} ${personRole || ""}`);
+    const searchQueries = [
+      `${searchCompany} official company overview products services`,
+      isInterview
+        ? `${searchCompany} official careers ${personRole || ""} ${purpose || ""} student internship eligibility academic year application process`
+        : `${searchCompany} official announcements recent developments ${new Date().getFullYear()}`,
+    ];
+    const searchResults = await Promise.allSettled(
+      searchQueries.map((query) =>
+        withTimeout(tvly.search(query, { maxResults: 6 }), 9000, "Tavily research")
+      )
+    );
+    const combinedResults = searchResults.flatMap((result) =>
+      result.status === "fulfilled" && Array.isArray(result.value.results)
+        ? result.value.results
+        : []
+    );
+    const uniqueResults = [...new Map(
+      combinedResults.filter((result) => result?.url).map((result) => [result.url, result])
+    ).values()];
+    const relevantResults = selectRelevantSources(uniqueResults, company || "");
+    const sources = relevantResults.map((r) => ({
+      title: r.title || null,
+      url: r.url,
+      sourceType: r.sourceType,
+      publishedDate: r.published_date || null
+    }));
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const prompt = `Create a practical, fact-grounded meeting briefing for:
+    const prompt = `Create a practical, fact-grounded meeting briefing. The audience is the person preparing for the meeting, not the company. Keep the writing specific, useful and concise.
+
+MEETING DETAILS
 Company: ${company || "Not provided"}
 Person: ${personName || "Not provided"}
-Role: ${personRole || "Not provided"}
+Person's role: ${personRole || "Not provided"}
 Meeting type: ${meetingType || "Not provided"}
 Purpose: ${purpose || "Not provided"}
-Background: ${background || "Not provided"}
-Goals: ${goals || "Not provided"}
+User background: ${background || "Not provided"}
+User goals: ${goals || "Not provided"}
 
-Use only the relevant, quality-filtered research sources below. Do not use outside assumptions to fill gaps. Every company-specific factual claim in Executive Summary, Recent Developments, and Important Insights must be supported by one of these sources; cite it inline using its exact title in the format [Source: exact source title]. If no source supports a claim, omit it or clearly label it as unverified. Prefer official company sources for company announcements and established news publishers for independent reporting. Do not cite a source for a claim it does not support. If the filtered source list is empty, say that reliable relevant sources could not be found and do not invent recent developments.
+RESEARCH RULES
+- Use only the research sources supplied at the end. Do not use outside assumptions to fill gaps.
+- Company Background must explain the organisation itself: what it does, its main products/services or business areas, and relevant context. Do not repeat the user's background or meeting form here.
+- Include 3–5 concrete company facts when sources support them. Cite each factual claim inline with the exact source title: [Source: exact source title].
+- Role and Internship Context must focus on the named role and opportunity. For internships, look for official academic-year, graduation-year, location and application requirements. Do not infer eligibility.
+- Recent Developments must contain dated, genuinely recent company developments only when a supplied source supports them. If none are found, say so plainly; do not fill the section with generic career-page information.
+- Key Insights must explain what the research means for this meeting. Separate sourced facts from clearly labelled preparation advice. Avoid generic statements such as merely saying the company has a careers page.
+- Prefer official company and official careers sources. Use established news publishers only for independent reporting. Do not cite a source for a claim it does not support.
+- If no source supports a requested fact, say "Not confirmed in the available sources" and add it to Information Gaps.
+- Do not imply that a first-year student is eligible for a specific internship unless an included official source explicitly confirms it. Make eligibility verification the first suggested action when it is unknown.
 
-Personalisation rules:
-- Treat the user's background and goals only as information they explicitly provided. Do not infer their skill level, years of experience, project history, achievements, frameworks, tools, certifications, teamwork, or professional experience.
-- If the background contains only a technology or language name (for example, "Java"), describe it only as a stated area of learning or familiarity. Do not present the user as an experienced Java developer or claim they have built production systems.
-- In Personalised Talking Points, output 2–5 concise Markdown bullet points only. Each bullet must have a non-empty label and detail in the same line, using the format "- Confirmed background: ...", "- Optional (only if true): ...", or "- Project detail to prepare: ...". Do not create standalone subheadings, numbered "Talking point" labels, empty labels, or repeat the same fact across multiple bullets.
-- Put missing details needed for stronger personalisation under Information Gaps. Never fill those gaps with assumptions.
-- Tailor Suggested Questions to the stated meeting contact. If the contact is HR/recruiting, prioritise eligibility for the named internship and academic year, application windows, hiring stages, assessment format, location, and how to apply. Do not ask HR to explain detailed engineering architecture or technical evaluation rubrics; label those as questions for an engineering interviewer if useful.
-- Do not imply that a first-year student is eligible for a specific Google internship unless an included official source explicitly confirms the eligibility criteria. If eligibility is not confirmed, make checking it the first recommended action and state the gap clearly.
+PERSONALISATION RULES
+- Use only details explicitly supplied by the user. Do not invent experience, achievements, skills, GPA, certifications, teamwork or technical knowledge.
+- If the user says they are learning Java, describe Java as a current learning area, not professional proficiency.
+- Reflect projects accurately as projects the user says they built; do not invent implementation details, impact, tools or results.
+- For an HR/recruiting contact, ask practical questions about academic eligibility, graduation year, application windows, selection stages, assessment format, location and application process. Do not ask HR detailed engineering questions.
+- Include 3–5 suggested questions, prioritised for the stated contact.
+- Personalised Talking Points must contain 3–5 concise bullets. Every bullet must have a non-empty label and useful detail on the same line, such as "Confirmed background:", "Project detail to prepare:", or "Optional (only if true):". Do not use empty labels or repeat the same detail.
+- Put missing information needed for stronger preparation under Information Gaps.
 
+RESEARCH SOURCES
 ${JSON.stringify(relevantResults)}
 
 Use exactly these Markdown headings:
-## Executive Summary
+## Company Background
+## Role and Internship Context
 ## Recent Developments
-## Important Insights
+## Key Insights
 ## Suggested Questions
 ## Personalised Talking Points
 ## Information Gaps`;
@@ -130,7 +173,12 @@ Use exactly these Markdown headings:
     let lastError;
     for (const model of MODELS) {
       try {
-        reply = await ai.models.generateContent({ model, contents: prompt });
+        const timeoutMs = model === MODELS[0] ? 38000 : 10000;
+        reply = await withTimeout(
+          ai.models.generateContent({ model, contents: prompt }),
+          timeoutMs,
+          `${model} briefing request`
+        );
         selectedModel = model;
         break;
       } catch (error) {
