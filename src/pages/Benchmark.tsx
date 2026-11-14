@@ -279,7 +279,10 @@ export default function Benchmark() {
                           Evidence support: {agent.factCheck.score === null ? 'Not scored' : `${agent.factCheck.score}/100`}
                         </p>
                         <p className="mt-1 text-sm text-ink/75">
-                          Supported: {agent.factCheck.supported} · Contradicted: {agent.factCheck.contradicted} · Unverified: {agent.factCheck.unverified}
+                          Claims checked: {agent.factCheck.claims.length} (up to 8 sampled) · Supported: {agent.factCheck.supported} · Contradicted: {agent.factCheck.contradicted} · Unverified: {agent.factCheck.unverified}
+                        </p>
+                        <p className="mt-1 text-xs leading-[1.5] text-ink/65">
+                          This is an evidence-support rate for the sampled claims, not an accuracy score for the full report.
                         </p>
                         <p className="mt-3 text-xs leading-[1.5] text-ink/65">{agent.factCheck.note}</p>
                         {agent.factCheck.claims.length > 0 && (
