@@ -97,11 +97,13 @@ function estimateCost() {
   return null;
 }
 
-function extractFactClaims(output, agentKey) {
-  const sections = ["Key Findings", "Eligibility and Fit", "Deadlines and Dates"];
-  const claims = sections
-    .flatMap((heading) => listItems(extractSection(output, heading)))
-    .map((claim) => claim.replace(/\\[Source:\\s*[^\\]]+\\]/gi, "").trim())
+function extractFactClaims(research, agentKey) {
+  const claims = [
+    ...(research.keyFindings || []).map((finding) => finding.detail),
+    ...(research.eligibilityCriteria || []),
+    ...(research.deadlines || []).map((deadline) => deadline.detail)
+  ]
+    .map((claim) => claim.replace(/\[Source:\s*[^\]]+\]/gi, "").trim())
     .filter((claim) => claim.length >= 25 && claim.length <= 500)
     .slice(0, 4);
 
@@ -113,22 +115,14 @@ function extractFactClaims(output, agentKey) {
 }
 
 function parseJsonResponse(value) {
-  const cleaned = value.trim().replace(/^\`\`\`(?:json)?\\s*/i, "").replace(/\\s*\`\`\`$/, "");
+  const cleaned = value.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   return JSON.parse(cleaned);
 }
 
 async function factCheckAgents(ai, tvly, agents) {
   const claims = agents
     .filter((agent) => agent.status === "completed" && agent.research)
-    .flatMap((agent) => extractFactClaims(
-      [
-        agent.research.executiveSummary,
-        ...(agent.research.keyFindings || []).map((finding) => finding.detail),
-        ...(agent.research.eligibilityCriteria || []),
-        ...(agent.research.deadlines || []).map((deadline) => deadline.detail)
-      ].join("\\n"),
-      agent.key
-    ));
+    .flatMap((agent) => extractFactClaims(agent.research, agent.key));
 
   if (!claims.length) {
     return agents.map((agent) => ({
