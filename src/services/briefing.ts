@@ -181,7 +181,6 @@ export function buildLiveBriefing(
 
   const companyBackground = [
     ...splitItems(companySection),
-    ...splitItems(roleContext),
     ...splitItems(executiveSummary),
     ...splitItems(recentDevelopments),
   ].filter(Boolean);
@@ -200,7 +199,10 @@ export function buildLiveBriefing(
       companyBackground.length > 0
         ? companyBackground
         : ['No company background was provided in the generated briefing.'],
-    keyInsights: makeNotes(insights, 'Insight'),
+    keyInsights: [
+      ...makeNotes(roleContext, 'Role context'),
+      ...makeNotes(insights, 'Insight'),
+    ],
     suggestedQuestions: makeQuestions(questions),
     talkingPoints: makeNotes(talkingPoints, 'Talking point'),
     sources,
