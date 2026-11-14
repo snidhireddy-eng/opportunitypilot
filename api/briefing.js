@@ -1,7 +1,8 @@
 import { tavily } from "@tavily/core";
 import { GoogleGenAI } from "@google/genai";
 
-const MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
+// Prefer the model already confirmed to work; use Gemini 3.8 only as a fallback.
+const MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash"];
 
 function isTemporary(error) {
   const message = String(error?.message || error);
