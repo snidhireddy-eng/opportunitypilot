@@ -125,11 +125,11 @@ export default function About() {
 
       <Section>
         <div className="max-w-2xl border border-ink bg-note p-6 md:p-8">
-          <Eyebrow>PROTOTYPE</Eyebrow>
+          <Eyebrow>LIVE CAPABILITIES</Eyebrow>
           <p className="mt-4 text-lg leading-[1.5] text-ink">
-            OpportunityPilot is a hackathon prototype with live Tavily research and Gemini-powered briefing and
-            benchmarking endpoints. Sample sections are labelled separately. Factual accuracy is not independently
-            scored, and API cost remains unavailable unless verified pricing is configured.
+            OpportunityPilot uses live Tavily research and Gemini-powered briefing and benchmarking endpoints.
+            Example sections are labelled separately. Factual accuracy is not independently scored, and API cost
+            remains unavailable unless verified pricing is configured.
           </p>
         </div>
       </Section>
