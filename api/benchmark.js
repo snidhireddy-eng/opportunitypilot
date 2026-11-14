@@ -132,31 +132,25 @@ async function factCheckAgents(ai, tvly, agents) {
     }));
   }
 
-  const byAgent = await Promise.all(agents.map(async (agent) => {
-    const agentClaims = claims.filter((claim) => claim.agentKey === agent.key);
-    if (!agentClaims.length) return { agentKey: agent.key, sources: [] };
+  const evidence = (await Promise.all(claims.map(async (claim) => {
     try {
       const search = await withTimeout(
-        tvly.search(agentClaims.map((item) => item.claim).join(" ").slice(0, 1800), { maxResults: 5 }),
+        tvly.search(claim.claim.slice(0, 900), { maxResults: 3 }),
         8000,
-        `Tavily fact-check research for ${agent.name}`
+        `Tavily fact-check research for ${claim.id}`
       );
-      const sources = Array.isArray(search.results)
-        ? search.results.slice(0, 5).map((source) => ({
-            title: text(source.title, 300),
-            url: text(source.url, 1000),
-            content: text(source.content, 1800)
-          }))
-        : [];
-      return { agentKey: agent.key, sources };
+      return (Array.isArray(search.results) ? search.results.slice(0, 3) : [])
+        .map((source) => ({
+          claimId: claim.id,
+          agentKey: claim.agentKey,
+          title: text(source.title, 300),
+          url: text(source.url, 1000),
+          content: text(source.content, 1800)
+        }));
     } catch {
-      return { agentKey: agent.key, sources: [] };
+      return [];
     }
-  }));
-
-  const evidence = byAgent.flatMap((item) =>
-    item.sources.map((source) => ({ agentKey: item.agentKey, ...source }))
-  );
+  }))).flat();
   if (!evidence.length) {
     return agents.map((agent) => ({
       ...agent,
@@ -221,8 +215,9 @@ ${JSON.stringify(evidence)}`;
     const supported = checkedClaims.filter((item) => item.status === "supported").length;
     const contradicted = checkedClaims.filter((item) => item.status === "contradicted").length;
     const unverified = checkedClaims.filter((item) => item.status === "unverified").length;
-    const determinate = supported + contradicted;
-    const score = determinate ? Math.round((supported / determinate) * 100) : null;
+    const score = checkedClaims.length
+      ? Math.round((supported / checkedClaims.length) * 100)
+      : null;
     return {
       ...agent,
       factCheck: {
@@ -232,7 +227,7 @@ ${JSON.stringify(evidence)}`;
         contradicted,
         unverified,
         claims: checkedClaims,
-        note: "AI-assisted evidence assessment, not a guarantee of truth. Unverified claims are excluded from the score; review linked evidence before relying on important facts."
+        note: "Evidence-support score = supported claims divided by all checked claims. Contradicted and unverified claims both receive no support credit. This AI-assisted assessment is not a guarantee of truth; review the linked evidence before relying on important facts."
       },
       scores: agent.scores.map((item) => item.metric === "accuracy" ? { ...item, score } : item)
     };
@@ -504,7 +499,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       researchQuestion: question,
       completedAt: new Date().toISOString(),
-      rubric: "Both models receive identical inputs and initial Tavily sources. Relevance is a keyword-overlap heuristic; completeness checks six headings; source quality checks titled HTTPS links; citation validity checks source-title matching. Accuracy is an AI-assisted comparison of extracted claims against a separate Tavily reference search; supported/(supported + contradicted) is scored, while unverified claims are excluded. This is not a guarantee of truth. Response time measures each model request; reliability records request success. Cost is unavailable until model-specific prices are verified.",
+      rubric: "Both models receive identical inputs and initial Tavily sources. Relevance is a keyword-overlap heuristic; completeness checks six headings; source quality checks titled HTTPS links; citation validity checks source-title matching. Accuracy is an AI-assisted comparison of each extracted claim against its own separate Tavily reference search; supported/total checked claims is scored, so contradicted and unverified claims receive no support credit. This is not a guarantee of truth. Response time measures each model request; reliability records request success. Cost is unavailable until model-specific prices are verified.",
       agents,
       winners
     });
