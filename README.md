@@ -130,7 +130,7 @@ For cost calculation, configure both `GEMINI_INPUT_USD_PER_MILLION` and `GEMINI_
 
 ## Current Development Status
 
-The deployed Vercel app includes a live meeting-briefing endpoint (`api/briefing.js`), a standalone research endpoint (`api/research/agent2.js`), and a two-model benchmark endpoint (`api/benchmark.js`). These require server-side `TAVILY_API_KEY` and `GEMINI_API_KEY` values. Gemini provider availability can vary; a 503 response is a temporary provider failure, not a successful model result. The benchmark reports individual agent failures without discarding the other result. Factual accuracy is not independently scored, citation validity checks source-title traceability rather than truth, and API cost remains unavailable until verified model pricing is configured. Fictional sample data is separate from live results.
+The deployed Vercel app includes a live meeting-briefing endpoint (`api/briefing.js`), a standalone research endpoint (`api/research/agent2.js`), and a two-model benchmark endpoint (`api/benchmark.js`). These require server-side `TAVILY_API_KEY` and `GEMINI_API_KEY` values. Gemini provider availability can vary; a 503 response is a temporary provider failure, not a successful model result. The benchmark reports individual agent failures without discarding the other result. Factual accuracy is not independently scored, citation validity checks source-title traceability rather than truth, and API cost remains unavailable until verified model pricing is configured. Illustrative example content is clearly separated from live results.
 
 ## Project Goal
 
@@ -139,5 +139,5 @@ The goal is to develop OpportunityPilot into a platform that can generate resear
 ---
 
 **Project:** OpportunityPilot  
-**Status:** Deployed prototype with live Tavily research and Gemini-powered briefing and benchmarking APIs
+**Status:** Deployed app with live Tavily research and Gemini-powered briefing and benchmarking APIs
 **Hackathon:** Global AI Hackathon 2026
